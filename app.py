@@ -4,7 +4,6 @@ from flask_bcrypt import Bcrypt
 from forms import RegistrationForm, LoginForm, ForgotPasswordForm, ResetPasswordForm
 import MySQLdb.cursors
 import re
-from flask_dance.contrib.google import make_google_blueprint, google
 from flask_mail import Mail, Message
 import pandas as pd
 import matplotlib
@@ -220,41 +219,6 @@ def verify_otp():
             
             
                         
-"""
-def google_login():
-    if not google.authorized:
-        return redirect(url_for("google.login"))
-
-    resp = google.get("/oauth2/v2/userinfo")
-    if resp.ok:
-        user_info = resp.json()
-        email = user_info["email"]
-        name = user_info["name"]
-
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-        cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
-        account = cursor.fetchone()
-
-        if not account:
-            cursor.execute('''
-                INSERT INTO users (full_name, email, phone_number, address, password_hash, account_type)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            ''', (name, email, None, None, None, 'Google'))
-            mysql.connection.commit()
-            cursor.execute('SELECT * FROM users WHERE email = %s', (email,))
-            account = cursor.fetchone()
-
-        if account:
-                session['user_id'] = account['id']
-                flash(f"Logged in as {name} ({email}) via Google", "success")
-                return redirect(url_for("dashboard", user_id=account['id']))
-       
-        
-        return redirect(url_for("dashboard", user_id=account['id']))
-          
-    flash("Failed to log in via Google", "danger")
-    return redirect(url_for("login"))
-"""
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     form = ForgotPasswordForm()
