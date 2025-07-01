@@ -1158,6 +1158,9 @@ def visualize(user_id):
 
         print(f"Excel file saved to: {excel_path}")
 
+        # Initialize chart_filename as None
+        chart_filename = None
+
         # Generate charts with error handling
         plt.style.use('default')
         
@@ -1232,11 +1235,13 @@ def visualize(user_id):
             chart_path = os.path.join(charts_dir, chart_filename)
             plt.savefig(chart_path, dpi=300, bbox_inches='tight')
             plt.close()
+        else:
+            flash('No expense transactions available for chart generation. Excel report generated.', 'warning')
 
         # Store chart filenames in session
         session['chart_files'] = {
-            'overview': chart_filename,
-            'patterns': chart_filename,
+            'overview': chart_filename if chart_filename else 'no_chart.png',
+            'patterns': chart_filename if chart_filename else 'no_chart.png',
             'excel': excel_filename
         }
 
