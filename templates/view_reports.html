@@ -244,8 +244,14 @@
         <a href="{{ url_for('dashboard', user_id=user.id) }}" class="btn btn-secondary">
             <i class="bi bi-arrow-left"></i> Back to Dashboard
         </a>
+        {% if session.chart_files %}
+            <a href="{{ url_for('download_reports', user_id=user.id) }}" class="btn btn-primary">
+                Download Reports
+            </a>
+        {% endif %}
     </div>
 </div>
+
 {% endblock %}
 
 {% block scripts %}

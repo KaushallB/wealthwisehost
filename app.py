@@ -19,6 +19,11 @@ from psycopg2.extras import DictCursor
 from dotenv import load_dotenv
 import pytz
 from google import genai
+from flask import send_file
+import zipfile
+import io
+
+
 load_dotenv()
 
 app = Flask(__name__)
@@ -1158,16 +1163,12 @@ def visualize(user_id):
 
         print(f"Excel file saved to: {excel_path}")
 
-        # Initialize chart_filename as None
-        chart_filename = None
-
         # Generate charts with error handling
-        plt.style.use('default')
-        
-        # Chart 1: Expense distribution
+        chart_filename = None
         expenses_df = df[df['TRANSACTION_TYPE'] == 'expense'].copy()
         
         if not expenses_df.empty:
+            plt.style.use('default')
             fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 12))
             
             # Pie chart for expenses
@@ -1236,23 +1237,62 @@ def visualize(user_id):
             plt.savefig(chart_path, dpi=300, bbox_inches='tight')
             plt.close()
         else:
-            flash('No expense transactions available for chart generation. Excel report generated.', 'warning')
+            flash('No expense transactions available for chart generation. Excel report generated.', 'info')
 
-        # Store chart filenames in session
+        # Store file paths in session
         session['chart_files'] = {
-            'overview': chart_filename if chart_filename else 'no_chart.png',
-            'patterns': chart_filename if chart_filename else 'no_chart.png',
-            'excel': excel_filename
+            'excel': excel_path,  # Store full path instead of filename
+            'overview': chart_path if chart_filename else None
         }
 
         flash('Reports generated successfully!', 'success')
-        return redirect(url_for('dashboard', user_id=user_id))
+        return redirect(url_for('download_reports', user_id=user_id))
     
     except Exception as e:
         print(f"Error in visualize function: {str(e)}")
         flash(f'Error generating visualizations: {e}', 'danger')
         if 'conn' in locals():
             conn.close()
+        return redirect(url_for('dashboard', user_id=user_id))
+    
+@app.route('/download_reports/<int:user_id>')
+def download_reports(user_id):
+    if not is_logged_in() or session['user_id'] != user_id:
+        flash('Please log in to access reports.', 'danger')
+        return redirect(url_for('logout'))
+    
+    try:
+        chart_files = session.get('chart_files', {})
+        excel_path = chart_files.get('excel')
+        chart_path = chart_files.get('overview')
+
+        if not excel_path or not os.path.exists(excel_path):
+            flash('Excel report not found. Please generate reports again.', 'danger')
+            return redirect(url_for('dashboard', user_id=user_id))
+
+        # Create a zip file in memory
+        memory_file = io.BytesIO()
+        with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+            # Add Excel file
+            zf.write(os.path.basename(excel_path), excel_path)
+            # Add chart file if it exists
+            if chart_path and os.path.exists(chart_path):
+                zf.write(os.path.basename(chart_path), chart_path)
+
+        memory_file.seek(0)
+
+        # Clear session after serving files
+        session.pop('chart_files', None)
+
+        return send_file(
+            memory_file,
+            mimetype='application/zip',
+            as_attachment=True,
+            download_name=f'reports_{user_id}.zip'
+        )
+
+    except Exception as e:
+        flash(f'Error downloading reports: {str(e)}', 'danger')
         return redirect(url_for('dashboard', user_id=user_id))
     
 #VIEWREPORTS
