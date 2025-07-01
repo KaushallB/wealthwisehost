@@ -1,39 +1,34 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify,session
-from flask_mysqldb import MySQL
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_bcrypt import Bcrypt
 from forms import RegistrationForm, LoginForm, ForgotPasswordForm, ResetPasswordForm
-import MySQLdb.cursors
+from flask_sqlalchemy import SQLAlchemy
 import re
 from flask_mail import Mail, Message
 import pandas as pd
 import matplotlib
-matplotlib.use('Agg') # Using non-interactive backend
+matplotlib.use('Agg')  # Using non-interactive backend
 import matplotlib.pylab as plt
 import seaborn as sns
 import os
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from langchain_ollama import OllamaLLM
 from langchain_core.prompts import ChatPromptTemplate
 import random 
 import string
-from datetime import datetime
-import traceback
-import os
+import psycopg2
+from psycopg2.extras import DictCursor
 from dotenv import load_dotenv
+import pytz
 
 load_dotenv()
 
 app = Flask(__name__)
 
-# Production configuration
+# Production configuration for PostgreSQL
 if os.environ.get('RENDER'):
-    # Production database config
-    app.config['MYSQL_HOST'] = os.environ.get('DB_HOST')
-    app.config['MYSQL_USER'] = os.environ.get('DB_USER') 
-    app.config['MYSQL_PASSWORD'] = os.environ.get('DB_PASSWORD')
-    app.config['MYSQL_DB'] = os.environ.get('DB_NAME')
-    app.config['MYSQL_PORT'] = int(os.environ.get('DB_PORT', 3306))
+    # Use DATABASE_URL from Render (already formatted for PostgreSQL)
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql://')
     
     # Email config for production
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -43,21 +38,19 @@ if os.environ.get('RENDER'):
     app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS')
     app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER')
 else:
-    # Local development config (keep your existing config)
-    app.config['MYSQL_HOST'] = 'localhost'
-    app.config['MYSQL_USER'] = 'root'
-    app.config['MYSQL_PASSWORD'] = ''
-    app.config['MYSQL_DB'] = 'wealthwisenew'
+    # Local development with PostgreSQL
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost/wealthwisenew'
     
     # Mailpit for local development
     app.config['MAIL_SERVER'] = 'localhost'
     app.config['MAIL_PORT'] = 1025
     app.config['MAIL_USE_TLS'] = False
-    app.config['MAIL_USE_SSL'] = False
     app.config['MAIL_USERNAME'] = None
     app.config['MAIL_PASSWORD'] = None
     app.config['MAIL_DEFAULT_SENDER'] = 'noreply@wealthwise.com'
 
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
 
 app.secret_key = 'WealthWise'
 
@@ -69,44 +62,38 @@ app.config['MAIL_FAIL_SILENTLY'] = False
 
 # Initialize components
 enc = Bcrypt(app)
-mysql = MySQL(app)
 mail = Mail(app)
 
 app.config['WTF_CSRF_ENABLED'] = True
 
+# Nepal Time zone
+nepal_tz = pytz.timezone('Asia/Kathmandu')
 
-# Database
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'wealthwisenew'
-mysql = MySQL(app)
-
-# Mailpit 
-app.config['MAIL_SERVER'] = 'localhost'
-app.config['MAIL_PORT'] = 1025
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = False
-app.config['MAIL_USERNAME'] = None
-app.config['MAIL_PASSWORD'] = None
-app.config['MAIL_DEFAULT_SENDER'] = 'noreply@wealthwise.com'
-mail = Mail(app)
-
-app.config['WTF_CSRF_ENABLED'] = True
+# PostgreSQL configuration for raw queries
+def get_db_connection():
+    if os.environ.get('RENDER'):
+        conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+    else:
+        conn = psycopg2.connect(
+            host="localhost",
+            database="wealthwisenew",
+            user="postgres",
+            password="root"
+        )
+    return conn
 
 def is_logged_in():
     return 'user_id' in session
-
-
-@app.route('/')
-def home():
-    return redirect(url_for('login'))
 
 def is_email(identifier):
     return re.match(r'^\S+@\S+\.\S+$', identifier)
 
 def generate_otp(length=6):
-    return ''.join(random.choices(string.digits,k=length))
+    return ''.join(random.choices(string.digits, k=length))
+
+@app.route('/')
+def home():
+    return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -116,7 +103,8 @@ def login():
         pw = log.password.data
 
         try:
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=DictCursor)
 
             # Check if a password reset is pending
             if 'reset_token' in session:
@@ -144,7 +132,7 @@ def login():
                     # Check if OTP data already exists to avoid resending
                     if 'otp_data' not in session or not session.get('otp_data'):
                         otp = generate_otp()
-                        otp_expiry = (datetime.now() + timedelta(minutes=5)).timestamp()
+                        otp_expiry = (datetime.now(nepal_tz) + timedelta(minutes=5)).timestamp()
                         session['otp_data'] = {
                             'otp': otp,
                             'email': email,
@@ -167,12 +155,16 @@ def login():
             else:
                 flash('User not registered or invalid credentials', 'danger')
 
+            cursor.close()
+            conn.close()
+
         except Exception as e:
             flash(f"Error occurred: {e}", "danger")
-            mysql.connection.rollback()
+            if 'conn' in locals():
+                conn.rollback()
+                conn.close()
             
     return render_template('login.html', form=log)
-
 
 @app.route('/resend_otp', methods=['GET'])
 def resend_otp():
@@ -181,19 +173,19 @@ def resend_otp():
         flash('No active OTP session found. Please log in again.', 'danger')
         return redirect(url_for('login'))
 
-    if datetime.now().timestamp() > otp_data['expires']:
+    if datetime.now(nepal_tz).timestamp() > otp_data['expires']:
         session.pop('otp_data', None)
         flash('OTP has expired. Please log in again to receive a new OTP.', 'danger')
         return redirect(url_for('login'))
 
-    if otp_data.get('lockout_time') and datetime.now().timestamp() < otp_data['lockout_time']:
-        remaining_time = int(otp_data['lockout_time'] - datetime.now().timestamp())
+    if otp_data.get('lockout_time') and datetime.now(nepal_tz).timestamp() < otp_data['lockout_time']:
+        remaining_time = int(otp_data['lockout_time'] - datetime.now(nepal_tz).timestamp())
         flash(f'Too many invalid attempts. Please wait {remaining_time} seconds for a new OTP.', 'danger')
         return redirect(url_for('verify_otp'))
 
     # Regenerate and resend OTP
     otp = generate_otp()
-    otp_expiry = (datetime.now() + timedelta(minutes=5)).timestamp()
+    otp_expiry = (datetime.now(nepal_tz) + timedelta(minutes=5)).timestamp()
     otp_data.update({
         'otp': otp,
         'expires': otp_expiry,
@@ -214,7 +206,7 @@ def resend_otp():
         return redirect(url_for('verify_otp'))
 
     return redirect(url_for('verify_otp'))
-     
+
 @app.route('/verify_otp', methods=['GET', 'POST'])
 def verify_otp():
     otp_data = session.get('otp_data')
@@ -222,14 +214,14 @@ def verify_otp():
         flash('No OTP session found. Please login again', 'danger')
         return redirect(url_for('login'))
     
-    if datetime.now().timestamp() > otp_data['expires']:
+    if datetime.now(nepal_tz).timestamp() > otp_data['expires']:
         session.pop('otp_data', None)
         flash('OTP has expired. Please Login again to receive a new OTP', 'danger')
         return redirect(url_for('login'))
     
     # Checking for invalid attempts
-    if otp_data.get('lockout_time') and datetime.now().timestamp() < otp_data['lockout_time']:
-        remaining_time = int(otp_data['lockout_time'] - datetime.now().timestamp())
+    if otp_data.get('lockout_time') and datetime.now(nepal_tz).timestamp() < otp_data['lockout_time']:
+        remaining_time = int(otp_data['lockout_time'] - datetime.now(nepal_tz).timestamp())
         flash(f'Too many invalid attempts. Please wait {remaining_time} seconds for a new OTP.', 'danger')
         return render_template('verify_otp.html')
     
@@ -248,9 +240,8 @@ def verify_otp():
             return redirect(url_for('dashboard', user_id=otp_data['user_id']))
         
         else:
-            
             if otp_data['attempts'] >= 5:
-                otp_data['lockout_time'] = (datetime.now() + timedelta(minutes=5)).timestamp()
+                otp_data['lockout_time'] = (datetime.now(nepal_tz) + timedelta(minutes=5)).timestamp()
                 session['otp_data'] = otp_data
                 flash('Too many invalid OTP attempts. A new OTP will be sent after 5 minutes.', 'danger')
                 return render_template('verify_otp.html')
@@ -258,37 +249,34 @@ def verify_otp():
                 flash('Invalid OTP. Please try again. Attempts remaining: {}'.format(5 - otp_data['attempts']), 'danger')
     
     return render_template('verify_otp.html')
-            
-            
-                        
+
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     form = ForgotPasswordForm()
     if form.validate_on_submit():
         identifier = form.identifier.data.strip()  # Can be email or phone
         try:
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=DictCursor)
             if is_email(identifier):
                 cursor.execute('SELECT * FROM users WHERE email = %s', (identifier,))
             else:
-                # Removing +977 if present for phone number search
                 phone = re.sub(r'^\+977', '', identifier).strip()
                 cursor.execute('SELECT * FROM users WHERE phone_number = %s', (phone,))
             user = cursor.fetchone()
-            cursor.close()
 
             if user:
                 # Generating a simple token (user ID + timestamp)
-                token = f"{user['id']}-{int(datetime.now().timestamp())}"
+                token = f"{user['id']}-{int(datetime.now(nepal_tz).timestamp())}"
                 reset_url = url_for('reset_password', token=token, _external=True)
                 session['reset_token'] = {
                     'token': token,
                     'email': user['email'],
                     'phone': user['phone_number'],
-                    'expires': (datetime.now() + timedelta(minutes=2)).timestamp()
+                    'expires': (datetime.now(nepal_tz) + timedelta(minutes=2)).timestamp()
                 }
 
-                # Sending reset email or SMS (email for now, SMS can be added later)
+                # Sending reset email
                 try:
                     msg = Message("Password Reset Request", recipients=[user['email']])
                     msg.html = render_template("password_reset_email.html", full_name=user['full_name'], reset_url=reset_url)
@@ -301,9 +289,14 @@ def forgot_password():
                 flash('Identifier not found. Please register first.', 'danger')
                 return redirect(url_for('registration'))
 
+            cursor.close()
+            conn.close()
+
         except Exception as e:
             flash(f'Error occurred: {str(e)}', 'danger')
-            mysql.connection.rollback()
+            if 'conn' in locals():
+                conn.rollback()
+                conn.close()
 
         return redirect(url_for('login'))
 
@@ -313,7 +306,7 @@ def forgot_password():
 def reset_password(token):
     # Validate token
     reset_data = session.get('reset_token')
-    if not reset_data or reset_data['token'] != token or datetime.now().timestamp() > reset_data['expires']:
+    if not reset_data or reset_data['token'] != token or datetime.now(nepal_tz).timestamp() > reset_data['expires']:
         flash('Invalid or expired reset link.', 'danger')
         return redirect(url_for('forgot_password'))
 
@@ -324,7 +317,8 @@ def reset_password(token):
     form = ResetPasswordForm()
     # Fetch the current password hash for the user
     try:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=DictCursor)
         cursor.execute('SELECT password_hash FROM users WHERE email = %s OR phone_number = %s', 
                        (reset_data['email'], reset_data['phone']))
         user = cursor.fetchone()
@@ -332,34 +326,40 @@ def reset_password(token):
             form.meta = {'current_password_hash': user['password_hash']}
         else:
             flash('User not found.', 'danger')
+            cursor.close()
+            conn.close()
             return redirect(url_for('forgot_password'))
+
+        if form.validate_on_submit():
+            try:
+                hashed_password = enc.generate_password_hash(form.new_password.data).decode('utf-8')
+                cursor.execute('UPDATE users SET password_hash = %s WHERE email = %s OR phone_number = %s', 
+                              (hashed_password, reset_data['email'], reset_data['phone']))
+                conn.commit()
+
+                # Clear the reset token
+                session.pop('reset_token', None)
+                flash('Your password has been reset successfully. Please log in.', 'success')
+                return redirect(url_for('login'))
+
+            except Exception as e:
+                flash(f'Error occurred: {str(e)}', 'danger')
+                conn.rollback()
+
+            finally:
+                cursor.close()
+                conn.close()
+
         cursor.close()
+        conn.close()
+
     except Exception as e:
         flash(f'Error fetching user data: {str(e)}', 'danger')
+        if 'conn' in locals():
+            conn.close()
         return redirect(url_for('forgot_password'))
 
-    if form.validate_on_submit():
-        try:
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
-            hashed_password = enc.generate_password_hash(form.new_password.data).decode('utf-8')
-            cursor.execute('UPDATE users SET password_hash = %s WHERE email = %s OR phone_number = %s', 
-                           (hashed_password, reset_data['email'], reset_data['phone']))
-            mysql.connection.commit()
-            cursor.close()
-
-            # Clear the reset token
-            session.pop('reset_token', None)
-            flash('Your password has been reset successfully. Please log in.', 'success')
-            return redirect(url_for('login'))
-
-        except Exception as e:
-            flash(f'Error occurred: {str(e)}', 'danger')
-            mysql.connection.rollback()
-
-        return redirect(url_for('reset_password', token=token))
-
     return render_template('reset_password.html', form=form, token=token)
-
 
 @app.route('/registration', methods=['GET', 'POST'])
 def registration():
@@ -372,7 +372,8 @@ def registration():
         pw = form.password.data
     
         try:
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=DictCursor)
             phone_num = re.sub(r'^\+977', '', phone_num).strip()
             cursor.execute('SELECT * FROM users WHERE phone_number=%s OR email=%s', (phone_num, email))
             account = cursor.fetchone()
@@ -381,6 +382,8 @@ def registration():
                     flash('Phone Number Already Registered! Please use a new number', 'danger')
                 elif account['email'] == email:
                     flash('Email Already Registered! Please use a new email', 'danger')
+                cursor.close()
+                conn.close()
                 return redirect(url_for('registration'))
             else:
                 hash_pw = enc.generate_password_hash(pw).decode('utf-8')
@@ -389,17 +392,25 @@ def registration():
                     VALUES (%s, %s, %s, %s, %s)
                 ''', (full_name, email, phone_num, address, hash_pw))
 
-                mysql.connection.commit()
+                conn.commit()
+                try:
+                    msg = Message("Welcome to WealthWise!", recipients=[email])
+                    msg.html = render_template("welcome_mail.html", full_name=full_name)
+                    mail.send(msg)
+                except Exception as email_error:
+                    print(f'Error sending welcome email: {str(email_error)}')
+                    flash('Registration successful, but failed to send welcome email.', 'warning')
+
                 cursor.close()
+                conn.close()
                 flash('You Have Successfully Registered!', 'success')
-                msg = Message("Welcome to WealthWise!", recipients=[email])
-                msg.html = render_template("welcome_mail.html", full_name=full_name)
-                mail.send(msg)
                 return redirect(url_for('login'))
 
         except Exception as e:
             flash(f'Error occurred: {e}', 'danger')
-            mysql.connection.rollback()
+            if 'conn' in locals():
+                conn.rollback()
+                conn.close()
 
     return render_template('register.html', form=form)
 
@@ -409,17 +420,17 @@ def logout():
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
-#DASHBOARD
 @app.route('/dashboard/<int:user_id>')
 def dashboard(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
         return redirect(url_for('login'))
     
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=DictCursor)
     
-    # Get current month/year
-    current_month = datetime.now().month
-    current_year = datetime.now().year
+    # Get current month/year in Nepal Time
+    current_month = datetime.now(nepal_tz).month
+    current_year = datetime.now(nepal_tz).year
     
     # Get user's budget allocation preferences
     cursor.execute("SELECT * FROM budget_allocations WHERE user_id = %s", (user_id,))
@@ -431,7 +442,7 @@ def dashboard(user_id):
             INSERT INTO budget_allocations (user_id, needs_percent, wants_percent, savings_percent, total_budget)
             VALUES (%s, 50.00, 30.00, 20.00, 0.00)
         ''', (user_id,))
-        mysql.connection.commit()
+        conn.commit()
         allocation = {'needs_percent': 50, 'wants_percent': 30, 'savings_percent': 20, 'total_budget': 0}
     
     # Calculate monthly data dynamically from transactions
@@ -442,7 +453,7 @@ def dashboard(user_id):
             SUM(CASE WHEN transaction_type = 'expense' AND category = 'wants' THEN amount ELSE 0 END) as wants_spent,
             SUM(CASE WHEN transaction_type = 'expense' AND category = 'savings' THEN amount ELSE 0 END) as savings_made
         FROM transactions 
-        WHERE user_id = %s AND MONTH(date) = %s AND YEAR(date) = %s
+        WHERE user_id = %s AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
     ''', (user_id, current_month, current_year))
     
     monthly_data = cursor.fetchone()
@@ -463,9 +474,10 @@ def dashboard(user_id):
     user = cursor.fetchone()
     
     cursor.close()
+    conn.close()
     
     # Add current month name
-    current_month_name = datetime.now().strftime('%B')
+    current_month_name = datetime.now(nepal_tz).strftime('%B')
     
     return render_template('dashboard.html', 
                          user=user,
@@ -481,15 +493,9 @@ def dashboard(user_id):
                          savings_remaining=max(0, savings_remaining),
                          current_month_name=current_month_name,
                          current_year=current_year,
-                         monthly_expenses=(monthly_data['needs_spent'] or 0) + (monthly_data['wants_spent'] or 0)
-    )
+                         monthly_expenses=(monthly_data['needs_spent'] or 0) + (monthly_data['wants_spent'] or 0),
+                         nepal_tz=nepal_tz)
 
-
-# Initializing OLLAMA
-#model = OllamaLLM(model="llama3",use_gpu=False)
-
-
-#CHATBOT
 @app.route('/chatbot/<int:user_id>', methods=['GET', 'POST'])
 def chatbot(user_id):
     if not is_logged_in():
@@ -505,12 +511,15 @@ def chatbot(user_id):
         return redirect(url_for('dashboard', user_id=user_id))
 
     try:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=DictCursor)
         cursor.execute('SELECT * FROM users WHERE id=%s', (user_id,))
         user = cursor.fetchone()
         full_name = user['full_name']
         
         if not user:
+            cursor.close()
+            conn.close()
             return jsonify({'response': 'User not found.'}), 400
         
         cursor.execute('''SELECT transaction_type, category, SUM(amount) as total
@@ -547,6 +556,9 @@ def chatbot(user_id):
             f"Savings: Rs {float(savings_saved):.2f} (Goal: 20%)"
         )
         
+        cursor.close()
+        conn.close()
+        
         if request.method == 'POST':
             user_message = request.form.get('message', '').strip()
             context = request.form.get('context', '').strip()
@@ -571,6 +583,7 @@ def chatbot(user_id):
             """
             
             prompt = ChatPromptTemplate.from_template(template)
+            model = OllamaLLM(model="llama3")
             chain = prompt | model
             
             responseofai = chain.invoke({
@@ -587,9 +600,10 @@ def chatbot(user_id):
         return render_template('chatbot.html', user=user, full_name=full_name, prefilled_question=prefilled_question)
     
     except Exception as e:
+        if 'conn' in locals():
+            conn.close()
         return jsonify({'response': f'Error: {str(e)}'}), 500
 
-#ADDINCOME
 @app.route('/add_income/<int:user_id>', methods=['GET','POST'])
 def add_income(user_id):
     if not is_logged_in():
@@ -600,12 +614,13 @@ def add_income(user_id):
         flash('You are not authorized to access this page.', 'danger')
         return redirect(url_for('logout'))
 
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=DictCursor)
     
     if request.method == 'POST':
         amount = request.form.get('amount')
         category = request.form.get('category')
-        date_str = request.form.get('date')  # This gets the date from form
+        date_str = request.form.get('date')
         description = request.form.get('description')
         income_id = request.form.get('id')
         
@@ -615,7 +630,7 @@ def add_income(user_id):
             try:
                 # Convert date string to datetime with current time
                 date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-                current_time = datetime.now().time()
+                current_time = datetime.now(nepal_tz).time()
                 full_datetime = datetime.combine(date_obj.date(), current_time)
                 
                 if income_id:
@@ -633,7 +648,7 @@ def add_income(user_id):
                     )
                     flash('Income added successfully!', 'success')
                 
-                mysql.connection.commit()
+                conn.commit()
                 return redirect(url_for('add_income', user_id=user_id))
                 
             except Exception as e:
@@ -641,12 +656,12 @@ def add_income(user_id):
                 print(f"Error in add_income: {str(e)}")
 
     # Get recent income transactions for CURRENT MONTH
-    current_month = datetime.now().month
-    current_year = datetime.now().year
+    current_month = datetime.now(nepal_tz).month
+    current_year = datetime.now(nepal_tz).year
     cursor.execute('''
         SELECT * FROM transactions 
         WHERE user_id=%s AND transaction_type='income' 
-        AND MONTH(date)=%s AND YEAR(date)=%s 
+        AND EXTRACT(MONTH FROM date)=%s AND EXTRACT(YEAR FROM date)=%s 
         ORDER BY date DESC LIMIT 5
     ''', (user_id, current_month, current_year))
     recent_incomes = cursor.fetchall()
@@ -656,11 +671,9 @@ def add_income(user_id):
     user = cursor.fetchone()
     
     cursor.close()
-    return render_template('add_income.html', user=user, recent_incomes=recent_incomes)
+    conn.close()
+    return render_template('add_income.html', user=user, recent_incomes=recent_incomes, nepal_tz=nepal_tz)
 
-
-
-#EDITINCOME 
 @app.route('/edit_income/<int:user_id>/<int:income_id>', methods=['GET'])
 def edit_income(user_id, income_id):
     if not is_logged_in() or session['user_id'] != user_id:
@@ -668,30 +681,38 @@ def edit_income(user_id, income_id):
         return redirect(url_for('login'))
     
     try:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=DictCursor)
         cursor.execute('SELECT * FROM users WHERE id=%s', (user_id,))
         user = cursor.fetchone()
         if not user:
             flash('User not found.', 'danger')
+            cursor.close()
+            conn.close()
             return redirect(url_for('login'))
         
         cursor.execute("SELECT * FROM transactions WHERE id=%s AND user_id=%s AND transaction_type='income'", (income_id, user_id))
         income = cursor.fetchone()
         if not income:
             flash('Income not found.', 'danger')
+            cursor.close()
+            conn.close()
             return redirect(url_for('add_income', user_id=user_id))
         
         cursor.execute("SELECT * FROM transactions WHERE user_id=%s AND transaction_type='income' ORDER BY date DESC LIMIT 5", (user_id,))
         recent_incomes = cursor.fetchall()
         
-        today = datetime.now().strftime('%Y-%m-%d')
-        return render_template('add_income.html', user=user, today=today, recent_incomes=recent_incomes, income=income)
+        cursor.close()
+        conn.close()
+        today = datetime.now(nepal_tz).strftime('%Y-%m-%d')
+        return render_template('add_income.html', user=user, today=today, recent_incomes=recent_incomes, income=income, nepal_tz=nepal_tz)
     
     except Exception as e:
         flash(f'Error: {str(e)}', 'danger')
+        if 'conn' in locals():
+            conn.close()
         return redirect(url_for('dashboard', user_id=user_id))
- 
-#DELETEINCOME  
+
 @app.route('/delete_income/<int:user_id>/<int:income_id>', methods=['POST'])
 def delete_income(user_id, income_id):
     if not is_logged_in() or session['user_id'] != user_id:
@@ -699,25 +720,31 @@ def delete_income(user_id, income_id):
         return redirect(url_for('login'))
     
     try:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=DictCursor)
         cursor.execute('SELECT * FROM users WHERE id=%s', (user_id,))
         user = cursor.fetchone()
         if not user:
             flash('User not found.', 'danger')
+            cursor.close()
+            conn.close()
             return redirect(url_for('login'))
         
         # Delete the income record
         cursor.execute("DELETE FROM transactions WHERE id=%s AND user_id=%s AND transaction_type='income'", (income_id, user_id))
-        mysql.connection.commit()
+        conn.commit()
         
         flash('Income deleted successfully!', 'success')
+        cursor.close()
+        conn.close()
         return redirect(url_for('add_income', user_id=user_id))
     
     except Exception as e:
         flash(f'Error: {str(e)}', 'danger')
+        if 'conn' in locals():
+            conn.close()
         return redirect(url_for('add_income', user_id=user_id))
 
-#ADDEXPENSE
 @app.route('/add_expense/<int:user_id>', methods=['GET', 'POST'])
 def add_expense(user_id):
     if not is_logged_in():
@@ -728,7 +755,8 @@ def add_expense(user_id):
         flash('You are not authorized to access this page.', 'danger')
         return redirect(url_for('logout'))
 
-    cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+    conn = get_db_connection()
+    cursor = conn.cursor(cursor_factory=DictCursor)
     
     if request.method == 'POST':
         amount = request.form.get('amount')
@@ -743,7 +771,7 @@ def add_expense(user_id):
             try:
                 # Converting date string to datetime with current time
                 date_obj = datetime.strptime(date_str, '%Y-%m-%d')
-                current_time = datetime.now().time()
+                current_time = datetime.now(nepal_tz).time()
                 full_datetime = datetime.combine(date_obj.date(), current_time)
                 
                 if expense_id:
@@ -767,12 +795,12 @@ def add_expense(user_id):
                     else:
                         flash('Expense added successfully!', 'success')
                 
-                mysql.connection.commit()
+                conn.commit()
                 
                 # Only check budget warnings for 'needs' and 'wants', not 'savings'
                 if category.lower() in ['needs', 'wants']:
-                    current_month = datetime.now().month
-                    current_year = datetime.now().year
+                    current_month = datetime.now(nepal_tz).month
+                    current_year = datetime.now(nepal_tz).year
                     
                     # Getting user info for email
                     cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
@@ -783,7 +811,7 @@ def add_expense(user_id):
                         SELECT SUM(amount) as monthly_income 
                         FROM transactions 
                         WHERE user_id = %s AND transaction_type = 'income' AND category != 'savings'
-                        AND MONTH(date) = %s AND YEAR(date) = %s
+                        AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
                     ''', (user_id, current_month, current_year))
                     
                     income_result = cursor.fetchone()
@@ -806,7 +834,7 @@ def add_expense(user_id):
                             SELECT SUM(amount) as spent 
                             FROM transactions 
                             WHERE user_id = %s AND transaction_type = 'expense' 
-                            AND category = %s AND MONTH(date) = %s AND YEAR(date) = %s
+                            AND category = %s AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
                         ''', (user_id, category, current_month, current_year))
                         
                         spent_result = cursor.fetchone()
@@ -850,14 +878,14 @@ def add_expense(user_id):
                 
                 # Tracking savings progress (no warnings, just info)
                 elif category.lower() == 'savings':
-                    current_month = datetime.now().month
-                    current_year = datetime.now().year
+                    current_month = datetime.now(nepal_tz).month
+                    current_year = datetime.now(nepal_tz).year
                     
                     cursor.execute('''
                         SELECT SUM(amount) as monthly_income 
                         FROM transactions 
                         WHERE user_id = %s AND transaction_type = 'income' AND category != 'savings'
-                        AND MONTH(date) = %s AND YEAR(date) = %s
+                        AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
                     ''', (user_id, current_month, current_year))
                     
                     income_result = cursor.fetchone()
@@ -872,7 +900,7 @@ def add_expense(user_id):
                             SELECT SUM(amount) as saved 
                             FROM transactions 
                             WHERE user_id = %s AND transaction_type = 'expense' 
-                            AND category = 'savings' AND MONTH(date) = %s AND YEAR(date) = %s
+                            AND category = 'savings' AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
                         ''', (user_id, current_month, current_year))
                         saved_result = cursor.fetchone()
                         current_saved = saved_result['saved'] or 0
@@ -890,13 +918,13 @@ def add_expense(user_id):
                 print(f"Error in add_expense: {str(e)}")
 
     # Getting recent expense transactions for CURRENT MONTH
-    current_month = datetime.now().month
-    current_year = datetime.now().year
+    current_month = datetime.now(nepal_tz).month
+    current_year = datetime.now(nepal_tz).year
     
     cursor.execute('''
         SELECT * FROM transactions 
         WHERE user_id=%s AND transaction_type='expense' 
-        AND MONTH(date)=%s AND YEAR(date)=%s 
+        AND EXTRACT(MONTH FROM date)=%s AND EXTRACT(YEAR FROM date)=%s 
         ORDER BY date DESC LIMIT 5
     ''', (user_id, current_month, current_year))
     recent_expenses = cursor.fetchall()
@@ -912,7 +940,7 @@ def add_expense(user_id):
             SUM(CASE WHEN transaction_type = 'expense' AND category = 'needs' THEN amount ELSE 0 END) as needs_spent,
             SUM(CASE WHEN transaction_type = 'expense' AND category = 'wants' THEN amount ELSE 0 END) as wants_spent
         FROM transactions 
-        WHERE user_id = %s AND MONTH(date) = %s AND YEAR(date) = %s
+        WHERE user_id = %s AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
     ''', (user_id, current_month, current_year))
 
     monthly_data = cursor.fetchone()
@@ -930,16 +958,16 @@ def add_expense(user_id):
         wants_limit = 0
     
     cursor.close()
+    conn.close()
     return render_template('add_expense.html', 
                          user=user, 
                          recent_expenses=recent_expenses,
                          needs_spent=monthly_data['needs_spent'] or 0,
                          wants_spent=monthly_data['wants_spent'] or 0,
                          needs_limit=needs_limit,
-                         wants_limit=wants_limit)
+                         wants_limit=wants_limit,
+                         nepal_tz=nepal_tz)
 
-
-#EDITEXPENSE
 @app.route('/edit_expense/<int:user_id>/<int:id>', methods=['GET'])
 def edit_expense(user_id, id):
     if not is_logged_in() or session['user_id'] != user_id:
@@ -947,32 +975,38 @@ def edit_expense(user_id, id):
         return redirect(url_for('login'))
     
     try:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=DictCursor)
         cursor.execute('SELECT * FROM users WHERE id=%s', (user_id,))
         user = cursor.fetchone()
         if not user:
             flash('User not found.', 'danger')
+            cursor.close()
+            conn.close()
             return redirect(url_for('login'))
         
         cursor.execute("SELECT * FROM transactions WHERE id=%s AND user_id=%s AND transaction_type='expense'", (id, user_id))
         expense = cursor.fetchone()
         if not expense:
             flash('Expense not found.', 'danger')
+            cursor.close()
+            conn.close()
             return redirect(url_for('add_expense', user_id=user_id))
         
         cursor.execute("SELECT * FROM transactions WHERE user_id=%s AND transaction_type='expense' ORDER BY date DESC LIMIT 5", (user_id,))
         recent_expenses = cursor.fetchall()
         
-        today = datetime.now().strftime('%Y-%m-%d')
-        return render_template('add_expense.html', user=user, today=today, recent_expenses=recent_expenses, expense=expense)
+        cursor.close()
+        conn.close()
+        today = datetime.now(nepal_tz).strftime('%Y-%m-%d')
+        return render_template('add_expense.html', user=user, today=today, recent_expenses=recent_expenses, expense=expense, nepal_tz=nepal_tz)
     
     except Exception as e:
         flash(f'Error: {str(e)}', 'danger')
+        if 'conn' in locals():
+            conn.close()
         return redirect(url_for('login'))
-    finally:
-        cursor.close()
 
-#DELETEEXPENSE
 @app.route('/delete_expense/<int:user_id>/<int:id>', methods=['POST'])
 def delete_expense(user_id, id):
     if not is_logged_in() or session['user_id'] != user_id:
@@ -980,26 +1014,30 @@ def delete_expense(user_id, id):
         return redirect(url_for('login'))
     
     try:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=DictCursor)
         cursor.execute('SELECT * FROM users WHERE id=%s', (user_id,))
         user = cursor.fetchone()
         if not user:
             flash('User not found.', 'danger')
+            cursor.close()
+            conn.close()
             return redirect(url_for('login'))
         
         cursor.execute("DELETE FROM transactions WHERE id=%s AND user_id=%s AND transaction_type='expense'", (id, user_id))
-        mysql.connection.commit()
+        conn.commit()
         
         flash('Expense deleted successfully!', 'success')
+        cursor.close()
+        conn.close()
         return redirect(url_for('add_expense', user_id=user_id))
     
     except Exception as e:
         flash(f'Error: {str(e)}', 'danger')
+        if 'conn' in locals():
+            conn.close()
         return redirect(url_for('add_expense', user_id=user_id))
-    finally:
-        cursor.close()
 
-#GENERATEREPORTS
 @app.route('/visualize/<int:user_id>')
 def visualize(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
@@ -1007,12 +1045,15 @@ def visualize(user_id):
         return redirect(url_for('logout'))
     
     try:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=DictCursor)
         cursor.execute('SELECT full_name FROM users WHERE id = %s', (user_id,))
         user = cursor.fetchone()
         
         if not user:
             flash('User not found', 'danger')
+            cursor.close()
+            conn.close()
             return redirect(url_for('login'))
             
         full_name = user['full_name']
@@ -1030,15 +1071,15 @@ def visualize(user_id):
         ''', (user_id,))
         data = cursor.fetchall()
 
+        cursor.close()
+        conn.close()
+
         if not data:
             flash('No transaction data available for visualization. Please add some transactions first.', 'warning')
             return redirect(url_for('dashboard', user_id=user_id))
 
         # Converting to DataFrame with proper data types
         df = pd.DataFrame(data)
-        """print(f"DataFrame shape: {df.shape}")
-        print(f"DataFrame columns: {df.columns.tolist()}")
-        print(f"First few rows:\n{df.head()}")"""
         
         # Making column headers uppercase
         df.columns = df.columns.str.upper()
@@ -1188,12 +1229,10 @@ def visualize(user_id):
     except Exception as e:
         print(f"Error in visualize function: {str(e)}")
         flash(f'Error generating visualizations: {e}', 'danger')
+        if 'conn' in locals():
+            conn.close()
         return redirect(url_for('dashboard', user_id=user_id))
-    finally:
-        cursor.close()
 
-
-#VIEWREPORTS
 @app.route('/view_reports/<int:user_id>')
 def view_reports(user_id):
     if not is_logged_in():
@@ -1205,22 +1244,25 @@ def view_reports(user_id):
         return redirect(url_for('logout'))
     
     try:
-        cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=DictCursor)
         cursor.execute('SELECT * FROM users WHERE id=%s', (user_id,))
         user = cursor.fetchone()
         
         if not user:
             flash('User not found', 'danger')
+            cursor.close()
+            conn.close()
             return redirect(url_for('login'))
         
-        # Get current month data (following new monthly logic)
-        current_month = datetime.now().month
-        current_year = datetime.now().year
+        # Get current month data
+        current_month = datetime.now(nepal_tz).month
+        current_year = datetime.now(nepal_tz).year
         
         # Get CURRENT MONTH transactions only
         cursor.execute('''SELECT transaction_type, category, amount, date, description
                        FROM transactions
-                       WHERE user_id=%s AND MONTH(date) = %s AND YEAR(date) = %s
+                       WHERE user_id=%s AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
                        ORDER BY date DESC''', (user_id, current_month, current_year))
         transactions = cursor.fetchall()
         
@@ -1237,7 +1279,7 @@ def view_reports(user_id):
             transaction_type = transaction['transaction_type']
             category = transaction['category'].lower()
             
-            if transaction_type == 'income' and category != 'savings':  # FIXED: Exclude savings from income
+            if transaction_type == 'income' and category != 'savings':
                 total_income += amount
             elif transaction_type == 'expense':
                 total_expenses += amount
@@ -1249,7 +1291,7 @@ def view_reports(user_id):
                     savings_made += amount
         
         # Calculate net balance
-        net_balance = total_income - total_expenses - savings_made  # FIXED: Subtract savings
+        net_balance = total_income - total_expenses - savings_made
         
         # Get budget allocations
         cursor.execute('SELECT * FROM budget_allocations WHERE user_id=%s', (user_id,))
@@ -1272,7 +1314,7 @@ def view_reports(user_id):
         
         # Get ALL transactions for JavaScript filtering (but mark them with month/year)
         cursor.execute('''SELECT transaction_type, category, amount, date, description,
-                                MONTH(date) as month, YEAR(date) as year
+                                EXTRACT(MONTH FROM date) as month, EXTRACT(YEAR FROM date) as year
                        FROM transactions
                        WHERE user_id=%s
                        ORDER BY date DESC''', (user_id,))
@@ -1282,7 +1324,7 @@ def view_reports(user_id):
         formatted_transactions = []
         for transaction in all_transactions:
             formatted_transactions.append({
-                'date': transaction['date'].strftime('%Y-%m-%d'),
+                'date': transaction['date'].astimezone(nepal_tz).strftime('%Y-%m-%d'),
                 'type': transaction['transaction_type'],
                 'category': transaction['category'],
                 'amount': float(transaction['amount']),
@@ -1292,11 +1334,14 @@ def view_reports(user_id):
                 'is_current_month': (transaction['month'] == current_month and transaction['year'] == current_year)
             })
         
+        cursor.close()
+        conn.close()
+        
         return render_template('view_reports.html', 
                              user=user,
                              username=user['full_name'],
                              total_income=float(total_income),
-                             total_exp=float(total_expenses + savings_made),  # FIXED: Include savings in expenses
+                             total_exp=float(total_expenses + savings_made),
                              net_balance=float(net_balance),
                              needs_spent=float(needs_spent),
                              wants_spent=float(wants_spent),
@@ -1306,14 +1351,17 @@ def view_reports(user_id):
                              savings_budget=float(savings_budget),
                              transactions=formatted_transactions,
                              current_month=current_month,
-                             current_year=current_year)
+                             current_year=current_year,
+                             nepal_tz=nepal_tz)
     
     except Exception as e:
         flash(f"Error loading reports: {e}", 'danger')
-        mysql.connection.rollback()
+        if 'conn' in locals():
+            conn.rollback()
+            conn.close()
         return redirect(url_for('login'))
-    finally:
-        cursor.close()
-    
+
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()  # Create tables if they don't exist
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
