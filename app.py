@@ -19,18 +19,60 @@ import random
 import string
 from datetime import datetime
 import traceback
+import os
+from dotenv import load_dotenv
 
-
-
+load_dotenv()
 
 app = Flask(__name__)
 
-@app.route('/test_otp_email')
-def test_otp_email():
-    return render_template('otp_email.html', full_name='Test User', otp='123456')
+# Production configuration
+if os.environ.get('RENDER'):
+    # Production database config
+    app.config['MYSQL_HOST'] = os.environ.get('DB_HOST')
+    app.config['MYSQL_USER'] = os.environ.get('DB_USER') 
+    app.config['MYSQL_PASSWORD'] = os.environ.get('DB_PASSWORD')
+    app.config['MYSQL_DB'] = os.environ.get('DB_NAME')
+    app.config['MYSQL_PORT'] = int(os.environ.get('DB_PORT', 3306))
+    
+    # Email config for production
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER')
+    app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS')
+    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER')
+else:
+    # Local development config (keep your existing config)
+    app.config['MYSQL_HOST'] = 'localhost'
+    app.config['MYSQL_USER'] = 'root'
+    app.config['MYSQL_PASSWORD'] = ''
+    app.config['MYSQL_DB'] = 'wealthwisenew'
+    
+    # Mailpit for local development
+    app.config['MAIL_SERVER'] = 'localhost'
+    app.config['MAIL_PORT'] = 1025
+    app.config['MAIL_USE_TLS'] = False
+    app.config['MAIL_USE_SSL'] = False
+    app.config['MAIL_USERNAME'] = None
+    app.config['MAIL_PASSWORD'] = None
+    app.config['MAIL_DEFAULT_SENDER'] = 'noreply@wealthwise.com'
+
 
 app.secret_key = 'WealthWise'
+
+# Critical email settings for production
+app.config['TESTING'] = False
+app.config['MAIL_DEBUG'] = True
+app.config['MAIL_SUPPRESS_SEND'] = False
+app.config['MAIL_FAIL_SILENTLY'] = False
+
+# Initialize components
 enc = Bcrypt(app)
+mysql = MySQL(app)
+mail = Mail(app)
+
+app.config['WTF_CSRF_ENABLED'] = True
 
 
 # Database
@@ -444,7 +486,7 @@ def dashboard(user_id):
 
 
 # Initializing OLLAMA
-model = OllamaLLM(model="llama3",use_gpu=False)
+#model = OllamaLLM(model="llama3",use_gpu=False)
 
 
 #CHATBOT
@@ -457,6 +499,11 @@ def chatbot(user_id):
         flash('You are not authorized to access this chatbot.', 'danger')
         return redirect(url_for('logout'))
     
+    # For now, disable AI functionality in production
+    if os.environ.get('RENDER'):
+        flash('Chatbot feature is temporarily unavailable in production.', 'info')
+        return redirect(url_for('dashboard', user_id=user_id))
+
     try:
         cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
         cursor.execute('SELECT * FROM users WHERE id=%s', (user_id,))
@@ -1269,6 +1316,4 @@ def view_reports(user_id):
         cursor.close()
     
 if __name__ == '__main__':
-    app.run(debug=True)
-    
-    
+    app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
