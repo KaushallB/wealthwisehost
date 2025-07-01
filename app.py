@@ -20,7 +20,7 @@ import psycopg2
 from psycopg2.extras import DictCursor
 from dotenv import load_dotenv
 import pytz
-
+import google.generativeai as genai
 load_dotenv()
 
 app = Flask(__name__)
@@ -505,11 +505,6 @@ def chatbot(user_id):
         flash('You are not authorized to access this chatbot.', 'danger')
         return redirect(url_for('logout'))
     
-    # For now, disable AI functionality in production
-    if os.environ.get('RENDER'):
-        flash('Chatbot feature is temporarily unavailable in production.', 'info')
-        return redirect(url_for('dashboard', user_id=user_id))
-
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=DictCursor)
@@ -522,6 +517,7 @@ def chatbot(user_id):
             conn.close()
             return jsonify({'response': 'User not found.'}), 400
         
+        # Get user's financial data
         cursor.execute('''SELECT transaction_type, category, SUM(amount) as total
                         FROM transactions
                         WHERE user_id=%s
@@ -548,7 +544,7 @@ def chatbot(user_id):
                 elif category == 'wants':
                     wants_spent += amount
         
-        # Use NPR (Nepali Rupees) as specified
+        # Financial data summary
         financial_data = (
             f"Total Income: Rs {float(total_income):.2f}, "
             f"Needs Spent: Rs {float(needs_spent):.2f} (Budget: 50%), "
@@ -562,40 +558,51 @@ def chatbot(user_id):
         if request.method == 'POST':
             user_message = request.form.get('message', '').strip()
             context = request.form.get('context', '').strip()
+            
             if not user_message:
                 return jsonify({'response': 'Please enter a message.'}), 400
             
-            # Default to 'personal' since account_type is removed
-            template = """
-            You are a financial advisor for WealthWise, a finance management, advising, and recommendation app for students in Nepal. Provide concise, accurate financial advice (under 100 words) in NPR, focusing on budgeting and differentiating needs vs. wants. 
-            Needs are essential expenses (e.g., rent, groceries, utilities); wants are non-essential (e.g., entertainment, dining out). 
-            The average income of Nepalese students is from around Rs 5000.00 to Rs 25000.00.
-            Use the user's financial data. Stay professional, avoid non-financial topics, and do not ask questions unless prompted. 
-            If the query is unclear, suggest asking about budgeting or expenses.
-
-            User's financial data: {financial_data}
-
-            Conversation history: {context}
-
-            Question: {question}
-
-            Answer:
-            """
-            
-            prompt = ChatPromptTemplate.from_template(template)
-            model = OllamaLLM(model="llama3")
-            chain = prompt | model
-            
-            responseofai = chain.invoke({
-                "financial_data": financial_data,
-                "context": context,
-                "question": user_message
-            })
-
-            new_context = f"{context}\nUser:{user_message}\nAI:{responseofai}".strip()
-            return jsonify({'response': responseofai, 'context': new_context})
+            try:
+                # Configure Gemini API
+                if os.environ.get('RENDER'):
+                    genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
+                else:
+                    genai.configure(api_key='your_local_gemini_api_key')  # Add your local key
+                
+                # Create the model
+                model = genai.GenerativeModel('gemini-pro')
+                
+                # Create prompt for financial advisor
+                prompt = f"""
+                You are a financial advisor for WealthWise, a finance management app for students in Nepal. 
+                Provide concise, accurate financial advice (under 100 words) in NPR, focusing on budgeting and differentiating needs vs. wants.
+                
+                Needs are essential expenses (rent, groceries, utilities); wants are non-essential (entertainment, dining out).
+                Average income of Nepalese students: Rs 5,000-25,000.
+                
+                User's financial data: {financial_data}
+                
+                Previous conversation: {context}
+                
+                User question: {user_message}
+                
+                Provide helpful financial advice:
+                """
+                
+                # Generate response
+                response = model.generate_content(prompt)
+                ai_response = response.text
+                
+                # Update context
+                new_context = f"{context}\nUser: {user_message}\nAI: {ai_response}".strip()
+                
+                return jsonify({'response': ai_response, 'context': new_context})
+                
+            except Exception as ai_error:
+                print(f"Gemini API error: {str(ai_error)}")
+                return jsonify({'response': 'Sorry, the AI assistant is temporarily unavailable. Please try again later.'}), 500
         
-        # Handle GET request with pre-filled question
+        # Handle GET request
         prefilled_question = request.args.get('question', '')
         return render_template('chatbot.html', user=user, full_name=full_name, prefilled_question=prefilled_question)
     
