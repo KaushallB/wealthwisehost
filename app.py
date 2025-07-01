@@ -1067,7 +1067,7 @@ def delete_expense(user_id, id):
             conn.close()
         return redirect(url_for('add_expense', user_id=user_id))
 
-#VISUALIZE
+#GENERATEREPORT
 @app.route('/visualize/<int:user_id>')
 def visualize(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
@@ -1086,8 +1086,6 @@ def visualize(user_id):
             conn.close()
             return redirect(url_for('login'))
             
-        full_name = user['full_name']
-        
         cursor.execute('''
             SELECT date, category, amount, transaction_type 
             FROM transactions 
@@ -1103,7 +1101,50 @@ def visualize(user_id):
             flash('No transaction data available for visualization. Please add some transactions first.', 'warning')
             return redirect(url_for('dashboard', user_id=user_id))
 
-        # Explicitly specify column names when creating DataFrame
+        # Store full_name in session for download_reports
+        session['report_data'] = {'full_name': user['full_name']}
+        flash('Reports generated successfully!', 'success')
+        return redirect(url_for('download_reports', user_id=user_id))
+    
+    except Exception as e:
+        print(f"Error in visualize function: {str(e)}")
+        flash(f'Error preparing reports: {e}', 'danger')
+        if 'conn' in locals():
+            conn.close()
+        return redirect(url_for('dashboard', user_id=user_id))
+    
+@app.route('/download_reports/<int:user_id>')
+def download_reports(user_id):
+    if not is_logged_in() or session['user_id'] != user_id:
+        flash('Please log in to access reports.', 'danger')
+        return redirect(url_for('logout'))
+    
+    try:
+        # Get full_name from session
+        report_data = session.get('report_data', {})
+        full_name = report_data.get('full_name')
+        if not full_name:
+            flash('Report data not found. Please generate reports again.', 'danger')
+            return redirect(url_for('dashboard', user_id=user_id))
+
+        # Fetch transaction data
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        cursor.execute('''
+            SELECT date, category, amount, transaction_type 
+            FROM transactions 
+            WHERE user_id = %s
+            ORDER BY date ASC
+        ''', (user_id,))
+        data = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        if not data:
+            flash('No transaction data available for download.', 'warning')
+            return redirect(url_for('dashboard', user_id=user_id))
+
+        # Create DataFrame
         df = pd.DataFrame(
             [(row['date'], row['category'], row['amount'], row['transaction_type']) for row in data],
             columns=['DATE', 'CATEGORY', 'AMOUNT', 'TRANSACTION_TYPE']
@@ -1112,28 +1153,19 @@ def visualize(user_id):
         # Ensure proper data types
         df['DATE'] = pd.to_datetime(df['DATE'])
         df['AMOUNT'] = pd.to_numeric(df['AMOUNT'], errors='coerce')
-        
-        # Remove any rows with NaN amounts
         df = df.dropna(subset=['AMOUNT'])
         
         if df.empty:
             flash('No valid transaction data found after processing.', 'warning')
             return redirect(url_for('dashboard', user_id=user_id))
 
-        # Create directories
-        reports_dir = os.path.join('Offlinereports', 'reports')
-        charts_dir = os.path.join('Offlinereports', 'charts')
-        os.makedirs(reports_dir, exist_ok=True)
-        os.makedirs(charts_dir, exist_ok=True)
-
-        # Save to Excel with proper formatting
+        # Generate Excel file in memory
         excel_filename = f'{full_name}_transactions.xlsx'
-        excel_path = os.path.join(reports_dir, excel_filename)
-        
-        with pd.ExcelWriter(excel_path, engine='openpyxl') as writer:
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
             df.to_excel(writer, sheet_name='Transactions', index=False)
             
-            # Adding summary sheet
+            # Add summary sheet
             summary_data = []
             total_income = df[df['TRANSACTION_TYPE'] == 'income']['AMOUNT'].sum()
             total_expenses = df[df['TRANSACTION_TYPE'] == 'expense']['AMOUNT'].sum()
@@ -1161,10 +1193,8 @@ def visualize(user_id):
             summary_df = pd.DataFrame(summary_data, columns=['Category', 'Amount'])
             summary_df.to_excel(writer, sheet_name='Summary', index=False)
 
-        print(f"Excel file saved to: {excel_path}")
-
-        # Generate charts with error handling
-        chart_filename = None
+        # Generate chart in memory (if expenses exist)
+        chart_buffer = None
         expenses_df = df[df['TRANSACTION_TYPE'] == 'expense'].copy()
         
         if not expenses_df.empty:
@@ -1191,7 +1221,6 @@ def visualize(user_id):
             ax2.set_xticks(range(len(monthly_expenses)))
             ax2.set_xticklabels([str(month) for month in monthly_expenses.index], rotation=45)
             
-            # Add value labels on bars
             for bar in bars:
                 height = bar.get_height()
                 ax2.text(bar.get_x() + bar.get_width()/2., height + height*0.01,
@@ -1232,57 +1261,29 @@ def visualize(user_id):
 
             plt.tight_layout()
             
-            chart_filename = f'{full_name}_financial_overview.png'
-            chart_path = os.path.join(charts_dir, chart_filename)
-            plt.savefig(chart_path, dpi=300, bbox_inches='tight')
+            chart_buffer = io.BytesIO()
+            plt.savefig(chart_buffer, format='png', dpi=300, bbox_inches='tight')
             plt.close()
+            chart_buffer.seek(0)
         else:
             flash('No expense transactions available for chart generation. Excel report generated.', 'info')
 
-        # Store file paths in session
-        session['chart_files'] = {
-            'excel': excel_path,  # Store full path instead of filename
-            'overview': chart_path if chart_filename else None
-        }
-
-        flash('Reports generated successfully!', 'success')
-        return redirect(url_for('download_reports', user_id=user_id))
-    
-    except Exception as e:
-        print(f"Error in visualize function: {str(e)}")
-        flash(f'Error generating visualizations: {e}', 'danger')
-        if 'conn' in locals():
-            conn.close()
-        return redirect(url_for('dashboard', user_id=user_id))
-    
-@app.route('/download_reports/<int:user_id>')
-def download_reports(user_id):
-    if not is_logged_in() or session['user_id'] != user_id:
-        flash('Please log in to access reports.', 'danger')
-        return redirect(url_for('logout'))
-    
-    try:
-        chart_files = session.get('chart_files', {})
-        excel_path = chart_files.get('excel')
-        chart_path = chart_files.get('overview')
-
-        if not excel_path or not os.path.exists(excel_path):
-            flash('Excel report not found. Please generate reports again.', 'danger')
-            return redirect(url_for('dashboard', user_id=user_id))
-
-        # Create a zip file in memory
+        # Create zip file in memory
         memory_file = io.BytesIO()
         with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
             # Add Excel file
-            zf.write(os.path.basename(excel_path), excel_path)
+            excel_buffer.seek(0)
+            zf.writestr(excel_filename, excel_buffer.read())
             # Add chart file if it exists
-            if chart_path and os.path.exists(chart_path):
-                zf.write(os.path.basename(chart_path), chart_path)
+            if chart_buffer:
+                chart_filename = f'{full_name}_financial_overview.png'
+                chart_buffer.seek(0)
+                zf.writestr(chart_filename, chart_buffer.read())
 
         memory_file.seek(0)
 
-        # Clear session after serving files
-        session.pop('chart_files', None)
+        # Clear session data
+        session.pop('report_data', None)
 
         return send_file(
             memory_file,
@@ -1292,6 +1293,7 @@ def download_reports(user_id):
         )
 
     except Exception as e:
+        print(f"Error in download_reports: {str(e)}")
         flash(f'Error downloading reports: {str(e)}', 'danger')
         return redirect(url_for('dashboard', user_id=user_id))
     
