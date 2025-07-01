@@ -30,20 +30,6 @@ app = Flask(__name__)
 def test_otp_email():
     return render_template('otp_email.html', full_name='Test User', otp='123456')
 
-'''
-google_blueprint = make_google_blueprint(
-    client_id="666426612022-ncopuubkoer69h1hrq3qkig6sjdjvtfg.apps.googleusercontent.com",
-    client_secret="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",
-    scope=[
-        "openid",
-        "https://www.googleapis.com/auth/userinfo.email",
-        "https://www.googleapis.com/auth/userinfo.profile"
-    ],
-    redirect_url="/login/google/authorized"
-)
-app.register_blueprint(google_blueprint, url_prefix="/login")
-'''
-
 app.secret_key = 'WealthWise'
 enc = Bcrypt(app)
 
