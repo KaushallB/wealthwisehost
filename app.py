@@ -12,8 +12,6 @@ import seaborn as sns
 import os
 from datetime import datetime, timedelta
 from decimal import Decimal
-from langchain_ollama import OllamaLLM
-from langchain_core.prompts import ChatPromptTemplate
 import random 
 import string
 import psycopg2
@@ -27,7 +25,7 @@ app = Flask(__name__)
 
 # Production configuration for PostgreSQL
 if os.environ.get('RENDER'):
-    # Use DATABASE_URL from Render (already formatted for PostgreSQL)
+    # Using DATABASE_URL from Render (already formatted for PostgreSQL)
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql://')
     
     # Email config for production
@@ -60,7 +58,7 @@ app.config['MAIL_DEBUG'] = True
 app.config['MAIL_SUPPRESS_SEND'] = False
 app.config['MAIL_FAIL_SILENTLY'] = False
 
-# Initialize components
+# Initializing components
 enc = Bcrypt(app)
 mail = Mail(app)
 
@@ -95,6 +93,7 @@ def generate_otp(length=6):
 def home():
     return redirect(url_for('login'))
 
+#LOGIN
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     log = LoginForm()
@@ -166,6 +165,7 @@ def login():
             
     return render_template('login.html', form=log)
 
+#RESENDOTP
 @app.route('/resend_otp', methods=['GET'])
 def resend_otp():
     otp_data = session.get('otp_data')
@@ -207,6 +207,7 @@ def resend_otp():
 
     return redirect(url_for('verify_otp'))
 
+#VERIFYOTP
 @app.route('/verify_otp', methods=['GET', 'POST'])
 def verify_otp():
     otp_data = session.get('otp_data')
@@ -250,6 +251,7 @@ def verify_otp():
     
     return render_template('verify_otp.html')
 
+#FORGOTPASSWORD
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     form = ForgotPasswordForm()
@@ -302,6 +304,7 @@ def forgot_password():
 
     return render_template('forgot_password.html', form=form)
 
+#RESETPASSWORD
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     # Validate token
@@ -361,6 +364,7 @@ def reset_password(token):
 
     return render_template('reset_password.html', form=form, token=token)
 
+#REGISTRATION
 @app.route('/registration', methods=['GET', 'POST'])
 def registration():
     form = RegistrationForm()
@@ -414,12 +418,14 @@ def registration():
 
     return render_template('register.html', form=form)
 
+#LOGOUT
 @app.route('/logout')
 def logout():
     session.pop('user_id', None)
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
+#DASHBOARD
 @app.route('/dashboard/<int:user_id>')
 def dashboard(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
@@ -496,6 +502,7 @@ def dashboard(user_id):
                          monthly_expenses=(monthly_data['needs_spent'] or 0) + (monthly_data['wants_spent'] or 0),
                          nepal_tz=nepal_tz)
 
+#CHATBOT
 @app.route('/chatbot/<int:user_id>', methods=['GET', 'POST'])
 def chatbot(user_id):
     if not is_logged_in():
@@ -611,6 +618,7 @@ def chatbot(user_id):
             conn.close()
         return jsonify({'response': f'Error: {str(e)}'}), 500
 
+#ADDINCOME
 @app.route('/add_income/<int:user_id>', methods=['GET','POST'])
 def add_income(user_id):
     if not is_logged_in():
@@ -681,6 +689,7 @@ def add_income(user_id):
     conn.close()
     return render_template('add_income.html', user=user, recent_incomes=recent_incomes, nepal_tz=nepal_tz)
 
+#EDITINCOME
 @app.route('/edit_income/<int:user_id>/<int:income_id>', methods=['GET'])
 def edit_income(user_id, income_id):
     if not is_logged_in() or session['user_id'] != user_id:
@@ -720,6 +729,7 @@ def edit_income(user_id, income_id):
             conn.close()
         return redirect(url_for('dashboard', user_id=user_id))
 
+#DELETEINCOME
 @app.route('/delete_income/<int:user_id>/<int:income_id>', methods=['POST'])
 def delete_income(user_id, income_id):
     if not is_logged_in() or session['user_id'] != user_id:
@@ -752,6 +762,7 @@ def delete_income(user_id, income_id):
             conn.close()
         return redirect(url_for('add_income', user_id=user_id))
 
+#ADDEXPENSE
 @app.route('/add_expense/<int:user_id>', methods=['GET', 'POST'])
 def add_expense(user_id):
     if not is_logged_in():
@@ -975,6 +986,7 @@ def add_expense(user_id):
                          wants_limit=wants_limit,
                          nepal_tz=nepal_tz)
 
+#EDITEXPENSE
 @app.route('/edit_expense/<int:user_id>/<int:id>', methods=['GET'])
 def edit_expense(user_id, id):
     if not is_logged_in() or session['user_id'] != user_id:
@@ -1014,6 +1026,7 @@ def edit_expense(user_id, id):
             conn.close()
         return redirect(url_for('login'))
 
+#DELETEEXPENSE
 @app.route('/delete_expense/<int:user_id>/<int:id>', methods=['POST'])
 def delete_expense(user_id, id):
     if not is_logged_in() or session['user_id'] != user_id:
@@ -1045,6 +1058,7 @@ def delete_expense(user_id, id):
             conn.close()
         return redirect(url_for('add_expense', user_id=user_id))
 
+#VISUALIZE
 @app.route('/visualize/<int:user_id>')
 def visualize(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
@@ -1240,6 +1254,7 @@ def visualize(user_id):
             conn.close()
         return redirect(url_for('dashboard', user_id=user_id))
 
+#VIEWREPORTS
 @app.route('/view_reports/<int:user_id>')
 def view_reports(user_id):
     if not is_logged_in():
