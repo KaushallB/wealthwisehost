@@ -18,7 +18,7 @@ import psycopg2
 from psycopg2.extras import DictCursor
 from dotenv import load_dotenv
 import pytz
-import google.generativeai as genai
+from google import genai
 load_dotenv()
 
 app = Flask(__name__)
@@ -570,14 +570,14 @@ def chatbot(user_id):
                 return jsonify({'response': 'Please enter a message.'}), 400
             
             try:
-                # Configure Gemini API
+                # NEW GEMINI API CONFIGURATION
                 if os.environ.get('RENDER'):
-                    genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
+                    api_key = os.environ.get('GEMINI_API_KEY')
                 else:
-                    genai.configure(api_key='AIzaSyBaze8MZi4ZxPWWV0w1dFs50_07lyWtcOs') 
+                    api_key = 'AIzaSyBaze8MZi4ZxPWWV0w1dFs50_07lyWtcOs'
                 
-                # Create the model
-                model = genai.GenerativeModel('gemini-pro')
+                # Initialize the new Gemini client
+                client = genai.Client(api_key=api_key)
                 
                 # Create prompt for financial advisor
                 prompt = f"""
@@ -593,11 +593,15 @@ def chatbot(user_id):
                 
                 User question: {user_message}
                 
-                Provide helpful financial advice:
+                Provide helpful financial advice. Please answer in two sentences or less.
                 """
                 
-                # Generate response
-                response = model.generate_content(prompt)
+                # Generate response using NEW API
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=prompt
+                )
+                
                 ai_response = response.text
                 
                 # Update context
