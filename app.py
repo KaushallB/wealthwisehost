@@ -1082,7 +1082,7 @@ def visualize(user_id):
             return redirect(url_for('login'))
             
         full_name = user['full_name']
-           
+        
         cursor.execute('''
             SELECT date, category, amount, transaction_type 
             FROM transactions 
@@ -1249,6 +1249,135 @@ def visualize(user_id):
         if 'conn' in locals():
             conn.close()
         return redirect(url_for('dashboard', user_id=user_id))
+    
+#VIEWREPORTS
+@app.route('/view_reports/<int:user_id>')
+def view_reports(user_id):
+    if not is_logged_in():
+        flash('Please log in to access the reports.', 'danger')
+        return redirect(url_for('login'))
+
+    if session['user_id'] != user_id:
+        flash('You are not authorized to access these reports.', 'danger')
+        return redirect(url_for('logout'))
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        cursor.execute('SELECT * FROM users WHERE id=%s', (user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
+            flash('User not found', 'danger')
+            cursor.close()
+            conn.close()
+            return redirect(url_for('login'))
+        
+        # Get current month data
+        current_month = datetime.now(nepal_tz).month
+        current_year = datetime.now(nepal_tz).year
+        
+        # Get CURRENT MONTH transactions only
+        cursor.execute('''SELECT transaction_type, category, amount, date, description
+                       FROM transactions
+                       WHERE user_id=%s AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
+                       ORDER BY date DESC''', (user_id, current_month, current_year))
+        transactions = cursor.fetchall()
+        
+        # Calculate monthly totals using NEW LOGIC (excluding savings from income)
+        total_income = Decimal('0.0')
+        total_expenses = Decimal('0.0')
+        needs_spent = Decimal('0.0')
+        wants_spent = Decimal('0.0')
+        savings_made = Decimal('0.0')
+        
+        # Process transactions with corrected logic
+        for transaction in transactions:
+            amount = transaction['amount']
+            transaction_type = transaction['transaction_type']
+            category = transaction['category'].lower()
+            
+            if transaction_type == 'income' and category != 'savings':
+                total_income += amount
+            elif transaction_type == 'expense':
+                total_expenses += amount
+                if category == 'needs':
+                    needs_spent += amount
+                elif category == 'wants':
+                    wants_spent += amount
+                elif category == 'savings':
+                    savings_made += amount
+        
+        # Calculate net balance
+        net_balance = total_income - total_expenses - savings_made
+        
+        # Get budget allocations
+        cursor.execute('SELECT * FROM budget_allocations WHERE user_id=%s', (user_id,))
+        budget = cursor.fetchone()
+        
+        # Use default percentages if no budget exists
+        if not budget:
+            needs_percent = Decimal('50.00')
+            wants_percent = Decimal('30.00')
+            savings_percent = Decimal('20.00')
+        else:
+            needs_percent = Decimal(budget['needs_percent']) if budget.get('needs_percent') else Decimal('50.00')
+            wants_percent = Decimal(budget['wants_percent']) if budget.get('wants_percent') else Decimal('30.00')
+            savings_percent = Decimal(budget['savings_percent']) if budget.get('savings_percent') else Decimal('20.00')
+        
+        # Calculate monthly budget limits (based on actual income, not including savings)
+        needs_budget = (needs_percent / 100) * total_income if total_income > 0 else Decimal('0.0')
+        wants_budget = (wants_percent / 100) * total_income if total_income > 0 else Decimal('0.0')
+        savings_budget = (savings_percent / 100) * total_income if total_income > 0 else Decimal('0.0')
+        
+        # Get ALL transactions for JavaScript filtering (but mark them with month/year)
+        cursor.execute('''SELECT transaction_type, category, amount, date, description,
+                                EXTRACT(MONTH FROM date) as month, EXTRACT(YEAR FROM date) as year
+                       FROM transactions
+                       WHERE user_id=%s
+                       ORDER BY date DESC''', (user_id,))
+        all_transactions = cursor.fetchall()
+        
+        # Format all transactions for JavaScript with month/year info
+        formatted_transactions = []
+        for transaction in all_transactions:
+            formatted_transactions.append({
+                'date': transaction['date'].astimezone(nepal_tz).strftime('%Y-%m-%d'),
+                'type': transaction['transaction_type'],
+                'category': transaction['category'],
+                'amount': float(transaction['amount']),
+                'description': transaction['description'],
+                'month': transaction['month'],
+                'year': transaction['year'],
+                'is_current_month': (transaction['month'] == current_month and transaction['year'] == current_year)
+            })
+        
+        cursor.close()
+        conn.close()
+        
+        return render_template('view_reports.html', 
+                             user=user,
+                             username=user['full_name'],
+                             total_income=float(total_income),
+                             total_exp=float(total_expenses + savings_made),
+                             net_balance=float(net_balance),
+                             needs_spent=float(needs_spent),
+                             wants_spent=float(wants_spent),
+                             savings_saved=float(savings_made),
+                             needs_budget=float(needs_budget),
+                             wants_budget=float(wants_budget),
+                             savings_budget=float(savings_budget),
+                             transactions=formatted_transactions,
+                             current_month=current_month,
+                             current_year=current_year,
+                             nepal_tz=nepal_tz)
+    
+    except Exception as e:
+        flash(f"Error loading reports: {e}", 'danger')
+        if 'conn' in locals():
+            conn.rollback()
+            conn.close()
+        return redirect(url_for('login'))
 
 if __name__ == '__main__':
     with app.app_context():
