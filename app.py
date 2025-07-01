@@ -1107,7 +1107,7 @@ def visualize(user_id):
         df = pd.DataFrame(data)
         
         # Making column headers uppercase
-        df.columns = df.columns.str.upper()
+        df.columns = df.columns.astype(str).str.upper()
         
         # Ensuring proper data types
         df['DATE'] = pd.to_datetime(df['DATE'])
