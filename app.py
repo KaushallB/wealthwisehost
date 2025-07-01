@@ -574,7 +574,7 @@ def chatbot(user_id):
                 if os.environ.get('RENDER'):
                     genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
                 else:
-                    genai.configure(api_key='your_local_gemini_api_key')  # Add your local key
+                    genai.configure(api_key='AIzaSyBaze8MZi4ZxPWWV0w1dFs50_07lyWtcOs') 
                 
                 # Create the model
                 model = genai.GenerativeModel('gemini-pro')
