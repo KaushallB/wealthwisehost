@@ -143,31 +143,40 @@ def login():
                 stored_hashed_pw = account['password_hash']
                 full_name = account['full_name']
                 email = account['email']
+                use_otp = account['use_otp']
                 if enc.check_password_hash(stored_hashed_pw, pw):
-                    if 'otp_data' not in session or not session.get('otp_data'):
-                        otp = generate_otp()
-                        otp_expiry = (datetime.now(nepal_tz) + timedelta(minutes=5)).timestamp()
-                        session['otp_data'] = {
-                            'otp': otp,
-                            'email': email,
-                            'user_id': account['id'],
-                            'full_name': full_name,
-                            'expires': otp_expiry,
-                            'attempts': 0,
-                            'lockout_time': None
-                        }
-                        try:
-                            msg = Message("Your Wealthwise OTP", recipients=[email])
-                            msg.html = render_template("otp_email.html", full_name=full_name, otp=otp)
-                            mail.send(msg)
-                            flash("An OTP has been sent to your email.", 'info')
-                            logging.info(f"OTP sent to {email}")
-                        except Exception as email_error:
-                            logging.error(f"OTP email sending failed: {str(email_error)}")
-                            flash(f'Error sending OTP: {str(email_error)}', 'danger')
-                    cursor.close()
-                    conn.close()
-                    return redirect(url_for('verify_otp'))
+                    if use_otp:
+                        if 'otp_data' not in session or not session.get('otp_data'):
+                            otp = generate_otp()
+                            otp_expiry = (datetime.now(nepal_tz) + timedelta(minutes=5)).timestamp()
+                            session['otp_data'] = {
+                                'otp': otp,
+                                'email': email,
+                                'user_id': account['id'],
+                                'full_name': full_name,
+                                'expires': otp_expiry,
+                                'attempts': 0,
+                                'lockout_time': None
+                            }
+                            try:
+                                msg = Message("Your Wealthwise OTP", recipients=[email])
+                                msg.html = render_template("otp_email.html", full_name=full_name, otp=otp)
+                                mail.send(msg)
+                                flash("An OTP has been sent to your email.", 'info')
+                                logging.info(f"OTP sent to {email}")
+                            except Exception as email_error:
+                                logging.error(f"OTP email sending failed: {str(email_error)}")
+                                flash(f'Error sending OTP: {str(email_error)}', 'danger')
+                        cursor.close()
+                        conn.close()
+                        return redirect(url_for('verify_otp'))
+                    else:
+                        session['user_id'] = account['id']
+                        session.pop('otp_data', None)
+                        flash('Login Successful', 'success')
+                        cursor.close()
+                        conn.close()
+                        return redirect(url_for('dashboard', user_id=account['id']))
                 else:
                     flash('Invalid Password', 'danger')
             else:
@@ -451,7 +460,7 @@ def dashboard(user_id):
     needs_remaining = needs_limit - (monthly_data['needs_spent'] or 0)
     wants_remaining = wants_limit - (monthly_data['wants_spent'] or 0)
     savings_remaining = savings_target - (monthly_data['savings_made'] or 0)
-    cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    cursor.execute("SELECT full_name, use_otp FROM users WHERE id = %s", (user_id,))
     user = cursor.fetchone()
     cursor.close()
     conn.close()
@@ -471,7 +480,8 @@ def dashboard(user_id):
                          current_month_name=current_month_name,
                          current_year=current_year,
                          monthly_expenses=(monthly_data['needs_spent'] or 0) + (monthly_data['wants_spent'] or 0),
-                         nepal_tz=nepal_tz)
+                         nepal_tz=nepal_tz,
+                         use_otp=user['use_otp'])
 
 #CHATBOT
 @app.route('/chatbot/<int:user_id>', methods=['GET', 'POST'])
@@ -1209,6 +1219,32 @@ def view_reports(user_id):
             conn.rollback()
             conn.close()
         return redirect(url_for('login'))
+
+#TOGGLEOTP
+@app.route('/toggle_otp/<int:user_id>', methods=['POST'])
+def toggle_otp(user_id):
+    if not is_logged_in() or session['user_id'] != user_id:
+        return jsonify({'success': False, 'message': 'Unauthorized access.'}), 403
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        cursor.execute('SELECT use_otp FROM users WHERE id = %s', (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'message': 'User not found.'}), 404
+        new_otp_status = not user['use_otp']
+        cursor.execute('UPDATE users SET use_otp = %s WHERE id = %s', (new_otp_status, user_id))
+        conn.commit()
+        cursor.close()
+        conn.close()
+        status_text = 'enabled' if new_otp_status else 'disabled'
+        flash(f'2FA has been {status_text}.', 'success')
+        return jsonify({'success': True, 'use_otp': new_otp_status})
+    except Exception as e:
+        logging.error(f"Toggle OTP error: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     with app.app_context():
