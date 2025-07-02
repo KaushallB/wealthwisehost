@@ -468,14 +468,31 @@ def dashboard(user_id):
         FROM transactions 
         WHERE user_id = %s AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
     ''', (user_id, current_month, current_year))
+    
     monthly_data = cursor.fetchone()
-    monthly_income = monthly_data['monthly_income'] or 0
+
+    
+    # Checking if monthly_data exists, otherwise default all values to 0
+    if monthly_data:
+        monthly_income = monthly_data['monthly_income'] or 0
+        needs_spent = monthly_data['needs_spent'] or 0
+        wants_spent = monthly_data['wants_spent'] or 0
+        savings_made = monthly_data['savings_made'] or 0
+    else:
+        monthly_income = 0
+        needs_spent = 0
+        wants_spent = 0
+        savings_made = 0
+    
     needs_limit = (monthly_income * allocation['needs_percent']) / 100
     wants_limit = (monthly_income * allocation['wants_percent']) / 100
     savings_target = (monthly_income * allocation['savings_percent']) / 100
-    needs_remaining = needs_limit - (monthly_data['needs_spent'] or 0)
-    wants_remaining = wants_limit - (monthly_data['wants_spent'] or 0)
-    savings_remaining = savings_target - (monthly_data['savings_made'] or 0)
+    
+    needs_remaining = needs_limit - needs_spent
+    wants_remaining = wants_limit - wants_spent
+    savings_remaining = savings_target - savings_made
+    
+
     cursor.execute("SELECT full_name, use_otp FROM users WHERE id = %s", (user_id,))
     user = cursor.fetchone()
     cursor.close()
@@ -487,19 +504,19 @@ def dashboard(user_id):
                          needs_limit=needs_limit,
                          wants_limit=wants_limit,
                          savings_target=savings_target,
-                         needs_spent=monthly_data['needs_spent'] or 0,
-                         wants_spent=monthly_data['wants_spent'] or 0,
-                         savings_made=monthly_data['savings_made'] or 0,
+                         needs_spent=needs_spent,      # Use the safe variables
+                         wants_spent=wants_spent,      # Use the safe variables
+                         savings_made=savings_made,    # Use the safe variables
                          needs_remaining=max(0, needs_remaining),
                          wants_remaining=max(0, wants_remaining),
                          savings_remaining=max(0, savings_remaining),
                          current_month_name=current_month_name,
                          current_year=current_year,
-                         monthly_expenses=(monthly_data['needs_spent'] or 0) + (monthly_data['wants_spent'] or 0),
+                         monthly_expenses=needs_spent + wants_spent, # Use the safe variables
                          nepal_tz=nepal_tz,
                          use_otp=user['use_otp'],
-                         form=form)  # Pass form for CSRF
-#CHATBOT
+                         form=form)
+
 @app.route('/chatbot/<int:user_id>', methods=['GET', 'POST'])
 def chatbot(user_id):
     if not is_logged_in():
