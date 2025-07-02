@@ -514,9 +514,10 @@ def dashboard(user_id):
                          current_year=current_year,
                          monthly_expenses=needs_spent + wants_spent, # Use the safe variables
                          nepal_tz=nepal_tz,
-                         use_otp=user['use_otp'],
+                         use_otp=user['use_otp'] if user['use_otp'] is not None else False,
                          form=form)
 
+#CHATBOT
 @app.route('/chatbot/<int:user_id>', methods=['GET', 'POST'])
 def chatbot(user_id):
     if not is_logged_in():
