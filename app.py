@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_bcrypt import Bcrypt
-from forms import RegistrationForm, LoginForm, ForgotPasswordForm, ResetPasswordForm
+from forms import RegistrationForm, LoginForm, ForgotPasswordForm, ResetPasswordForm ,OtpForm
 from flask_sqlalchemy import SQLAlchemy
 import re
 from flask_mail import Mail, Message
@@ -23,6 +23,7 @@ from flask import send_file
 import zipfile
 import io
 import logging
+import requests
 
 load_dotenv()
 
@@ -84,18 +85,25 @@ def is_email(identifier):
 def generate_otp(length=6):
     return ''.join(random.choices(string.digits, k=length))
 
-@app.route('/test_email')
-def test_email():
+def is_real_email(email):
+    """Check if email is real and deliverable using AbstractAPI"""
+    api_key = 'f66c8efc772d49509881fdf75dc1d78d'
+    url = f"https://emailvalidation.abstractapi.com/v1/?api_key={api_key}&email={email}"
     try:
-        msg = Message("Test Email from WealthWise", recipients=['test@example.com'])
-        msg.body = "This is a test email to verify SMTP configuration."
-        mail.send(msg)
-        logging.info("Test email sent successfully")
-        return "Test email sent successfully!"
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            # Check if deliverability is 'DELIVERABLE'
+            return data.get('deliverability') == 'DELIVERABLE'
+        else:
+            # If API fails, allow registration to proceed
+            logging.warning(f"Email validation API failed with status {response.status_code}")
+            return True
     except Exception as e:
-        logging.error(f"Test email failed: {str(e)}")
-        return f"Error sending email: {str(e)}"
-
+        # If API request fails, allow registration to proceed
+        logging.error(f"Email validation error: {str(e)}")
+        return True
+    
 @app.route('/debug_session')
 def debug_session():
     session_data = dict(session)
@@ -231,6 +239,7 @@ def resend_otp():
 #VERIFYOTP
 @app.route('/verify_otp', methods=['GET', 'POST'])
 def verify_otp():
+    form = OtpForm()
     otp_data = session.get('otp_data')
     if not otp_data:
         flash('No OTP session found. Please login again.', 'danger')
@@ -242,9 +251,9 @@ def verify_otp():
     if otp_data.get('lockout_time') and datetime.now(nepal_tz).timestamp() < otp_data['lockout_time']:
         remaining_time = int(otp_data['lockout_time'] - datetime.now(nepal_tz).timestamp())
         flash(f'Too many invalid attempts. Please wait {remaining_time} seconds for a new OTP.', 'danger')
-        return render_template('verify_otp.html')
-    if request.method == 'POST':
-        user_otp = request.form.get('otp', '').strip()
+        return render_template('verify_otp.html', form=form)
+    if form.validate_on_submit():
+        user_otp = form.otp.data.strip()
         otp_data['attempts'] += 1
         session['otp_data'] = otp_data
         if user_otp == otp_data['otp']:
@@ -259,7 +268,7 @@ def verify_otp():
                 flash('Too many invalid OTP attempts. A new OTP will be sent after 5 minutes.', 'danger')
             else:
                 flash(f'Invalid OTP. Attempts remaining: {5 - otp_data["attempts"]}', 'danger')
-    return render_template('verify_otp.html')
+    return render_template('verify_otp.html', form=form)
 
 #FORGOTPASSWORD
 @app.route('/forgot_password', methods=['GET', 'POST'])
@@ -363,6 +372,7 @@ def reset_password(token):
     return render_template('reset_password.html', form=form, token=token)
 
 #REGISTRATION
+
 @app.route('/registration', methods=['GET', 'POST'])
 def registration():
     form = RegistrationForm()
@@ -372,6 +382,11 @@ def registration():
         phone_num = form.phone_num.data
         address = form.address.data
         pw = form.password.data
+        
+        if not is_real_email(email):
+            flash("Please enter a real, deliverable email address.", "danger")
+            return render_template('register.html', form=form)
+        
         try:
             conn = get_db_connection()
             cursor = conn.cursor(cursor_factory=DictCursor)
@@ -430,6 +445,7 @@ def logout():
 def dashboard(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
         return redirect(url_for('login'))
+    form = LoginForm()  # Add for CSRF token
     conn = get_db_connection()
     cursor = conn.cursor(cursor_factory=DictCursor)
     current_month = datetime.now(nepal_tz).month
@@ -481,8 +497,8 @@ def dashboard(user_id):
                          current_year=current_year,
                          monthly_expenses=(monthly_data['needs_spent'] or 0) + (monthly_data['wants_spent'] or 0),
                          nepal_tz=nepal_tz,
-                         use_otp=user['use_otp'])
-
+                         use_otp=user['use_otp'],
+                         form=form)  # Pass form for CSRF
 #CHATBOT
 @app.route('/chatbot/<int:user_id>', methods=['GET', 'POST'])
 def chatbot(user_id):

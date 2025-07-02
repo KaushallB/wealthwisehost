@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm as FF
 from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired, EqualTo, ValidationError, Email
+from wtforms.validators import DataRequired, EqualTo, ValidationError, Email, Length
 import re
 from flask_bcrypt import Bcrypt
 
@@ -13,21 +13,21 @@ def name_val(form, field):
         raise ValidationError('Name should contain only letters and spaces')
 
 def number_val(form, field):
-    # Remove all non-digit characters except +
+    # Remove all non-digit characters except + initially for validation
     cleaned = re.sub(r'[^\d\+]', '', field.data)
-    # Allow +977 or no country code, but enforce 10 digits after stripping country code
+    # Allow +977 or no country code, but enforce 10 digits after stripping
     if not re.match(r'^(\+977)?\d{10}$', cleaned):
         raise ValidationError("Phone number must be exactly 10 digits (with or without +977)")
-    # Check length without country code
+    # Extract only the 10-digit number for storage
     digits_only = re.sub(r'^\+977', '', cleaned)
     if len(digits_only) != 10:
         raise ValidationError("Phone number must be exactly 10 digits")
+    # Update the field data to store only the 10-digit number
+    field.data = digits_only
 
 def pw_val(form, field):
-    # TODO: Remove print statement in production
-    print("Password entered:", field.data)  # Debugging line
     if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$", field.data):
-        raise ValidationError("Password must be at least 8 characters with uppercase, lowercase, digits, and special characters")
+        raise ValidationError("Password must be at least 8 characters with uppercase, lowercase, numbers, and special characters")
 
 def no_previous_password(form, field):
     if hasattr(form, 'meta') and 'current_password_hash' in form.meta and form.meta['current_password_hash']:
@@ -79,3 +79,7 @@ class ResetPasswordForm(FF):
     new_password = PasswordField('New Password', validators=[DataRequired(), pw_val, no_previous_password])
     confirm_password = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('new_password', message='Passwords must match')])
     submit = SubmitField('Reset Password')
+    
+class OtpForm(FF):
+    otp = StringField('OTP', validators=[DataRequired(), Length(min=6, max=6)])
+    submit = SubmitField('Verify OTP')
