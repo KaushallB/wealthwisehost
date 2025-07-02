@@ -148,6 +148,7 @@ def login():
                 cursor.execute('SELECT * FROM users WHERE phone_number = %s', (phone,))
             account = cursor.fetchone()
             if account:
+                use_otp = account['use_otp'] if account['use_otp'] is not None else False
                 stored_hashed_pw = account['password_hash']
                 full_name = account['full_name']
                 email = account['email']
@@ -445,77 +446,104 @@ def logout():
 def dashboard(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
         return redirect(url_for('login'))
+    
     form = LoginForm()  # Add for CSRF token
-    conn = get_db_connection()
-    cursor = conn.cursor(cursor_factory=DictCursor)
-    current_month = datetime.now(nepal_tz).month
-    current_year = datetime.now(nepal_tz).year
-    cursor.execute("SELECT * FROM budget_allocations WHERE user_id = %s", (user_id,))
-    allocation = cursor.fetchone()
-    if not allocation:
+    conn = None
+    cursor = None
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(cursor_factory=DictCursor)
+        
+        # Get current month/year in Nepal timezone
+        current_time = datetime.now(nepal_tz)
+        current_month = current_time.month
+        current_year = current_time.year
+        
+        # Ensure budget allocation exists
+        cursor.execute("SELECT * FROM budget_allocations WHERE user_id = %s", (user_id,))
+        allocation = cursor.fetchone()
+        
+        if not allocation:
+            cursor.execute('''
+                INSERT INTO budget_allocations 
+                (user_id, needs_percent, wants_percent, savings_percent, total_budget)
+                VALUES (%s, 50.00, 30.00, 20.00, 0.00)
+            ''', (user_id,))
+            conn.commit()
+            allocation = {'needs_percent': 50, 'wants_percent': 30, 'savings_percent': 20, 'total_budget': 0}
+        
+        # Get monthly data with proper null handling
         cursor.execute('''
-            INSERT INTO budget_allocations (user_id, needs_percent, wants_percent, savings_percent, total_budget)
-            VALUES (%s, 50.00, 30.00, 20.00, 0.00)
-        ''', (user_id,))
-        conn.commit()
-        allocation = {'needs_percent': 50, 'wants_percent': 30, 'savings_percent': 20, 'total_budget': 0}
-    cursor.execute('''
-        SELECT 
-            SUM(CASE WHEN transaction_type = 'income' AND category != 'savings' THEN amount ELSE 0 END) as monthly_income,
-            SUM(CASE WHEN transaction_type = 'expense' AND category = 'needs' THEN amount ELSE 0 END) as needs_spent,
-            SUM(CASE WHEN transaction_type = 'expense' AND category = 'wants' THEN amount ELSE 0 END) as wants_spent,
-            SUM(CASE WHEN transaction_type = 'expense' AND category = 'savings' THEN amount ELSE 0 END) as savings_made
-        FROM transactions 
-        WHERE user_id = %s AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
-    ''', (user_id, current_month, current_year))
-    
-    monthly_data = cursor.fetchone()
-
-    
-    # Checking if monthly_data exists, otherwise default all values to 0
-    if monthly_data:
-        monthly_income = monthly_data['monthly_income'] or 0
-        needs_spent = monthly_data['needs_spent'] or 0
-        wants_spent = monthly_data['wants_spent'] or 0
-        savings_made = monthly_data['savings_made'] or 0
-    else:
-        monthly_income = 0
-        needs_spent = 0
-        wants_spent = 0
-        savings_made = 0
-    
-    needs_limit = (monthly_income * allocation['needs_percent']) / 100
-    wants_limit = (monthly_income * allocation['wants_percent']) / 100
-    savings_target = (monthly_income * allocation['savings_percent']) / 100
-    
-    needs_remaining = needs_limit - needs_spent
-    wants_remaining = wants_limit - wants_spent
-    savings_remaining = savings_target - savings_made
-    
-
-    cursor.execute("SELECT full_name, use_otp FROM users WHERE id = %s", (user_id,))
-    user = cursor.fetchone()
-    cursor.close()
-    conn.close()
-    current_month_name = datetime.now(nepal_tz).strftime('%B')
-    return render_template('dashboard.html', 
-                         user=user,
-                         monthly_income=monthly_income,
-                         needs_limit=needs_limit,
-                         wants_limit=wants_limit,
-                         savings_target=savings_target,
-                         needs_spent=needs_spent,      # Use the safe variables
-                         wants_spent=wants_spent,      # Use the safe variables
-                         savings_made=savings_made,    # Use the safe variables
-                         needs_remaining=max(0, needs_remaining),
-                         wants_remaining=max(0, wants_remaining),
-                         savings_remaining=max(0, savings_remaining),
-                         current_month_name=current_month_name,
-                         current_year=current_year,
-                         monthly_expenses=needs_spent + wants_spent, # Use the safe variables
-                         nepal_tz=nepal_tz,
-                         use_otp=user['use_otp'] if user['use_otp'] is not None else False,
-                         form=form)
+            SELECT 
+                COALESCE(SUM(CASE WHEN transaction_type = 'income' AND category != 'savings' THEN amount ELSE 0 END), 0) as monthly_income,
+                COALESCE(SUM(CASE WHEN transaction_type = 'expense' AND category = 'needs' THEN amount ELSE 0 END), 0) as needs_spent,
+                COALESCE(SUM(CASE WHEN transaction_type = 'expense' AND category = 'wants' THEN amount ELSE 0 END), 0) as wants_spent,
+                COALESCE(SUM(CASE WHEN transaction_type = 'expense' AND category = 'savings' THEN amount ELSE 0 END), 0) as savings_made
+            FROM transactions 
+            WHERE user_id = %s 
+            AND EXTRACT(MONTH FROM date AT TIME ZONE 'Asia/Kathmandu') = %s 
+            AND EXTRACT(YEAR FROM date AT TIME ZONE 'Asia/Kathmandu') = %s
+        ''', (user_id, current_month, current_year))
+        
+        monthly_data = cursor.fetchone() or {
+            'monthly_income': 0,
+            'needs_spent': 0,
+            'wants_spent': 0,
+            'savings_made': 0
+        }
+        
+        # Calculate budget limits
+        monthly_income = Decimal(monthly_data['monthly_income'])
+        needs_spent = Decimal(monthly_data['needs_spent'])
+        wants_spent = Decimal(monthly_data['wants_spent'])
+        savings_made = Decimal(monthly_data['savings_made'])
+        
+        needs_limit = (monthly_income * Decimal(allocation['needs_percent'])) / 100
+        wants_limit = (monthly_income * Decimal(allocation['wants_percent'])) / 100
+        savings_target = (monthly_income * Decimal(allocation['savings_percent'])) / 100
+        
+        needs_remaining = max(Decimal(0), needs_limit - needs_spent)
+        wants_remaining = max(Decimal(0), wants_limit - wants_spent)
+        savings_remaining = max(Decimal(0), savings_target - savings_made)
+        
+        # Get user info
+        cursor.execute("SELECT full_name, use_otp FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        
+        if not user:
+            flash('User not found', 'danger')
+            return redirect(url_for('login'))
+            
+        return render_template('dashboard.html', 
+                            user=user,
+                            monthly_income=float(monthly_income),
+                            needs_limit=float(needs_limit),
+                            wants_limit=float(wants_limit),
+                            savings_target=float(savings_target),
+                            needs_spent=float(needs_spent),
+                            wants_spent=float(wants_spent),
+                            savings_made=float(savings_made),
+                            needs_remaining=float(needs_remaining),
+                            wants_remaining=float(wants_remaining),
+                            savings_remaining=float(savings_remaining),
+                            current_month_name=current_time.strftime('%B'),
+                            current_year=current_year,
+                            monthly_expenses=float(needs_spent + wants_spent),
+                            nepal_tz=nepal_tz,
+                            use_otp=user['use_otp'] if user['use_otp'] is not None else False,
+                            form=form)
+                            
+    except Exception as e:
+        logging.error(f"Dashboard error: {str(e)}", exc_info=True)
+        flash('An error occurred while loading the dashboard', 'danger')
+        return redirect(url_for('login'))
+        
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
 
 #CHATBOT
 @app.route('/chatbot/<int:user_id>', methods=['GET', 'POST'])
