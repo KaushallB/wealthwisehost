@@ -447,6 +447,9 @@ def dashboard(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
         return redirect(url_for('login'))
     
+    if request.args.get('flash_message'):
+        flash(request.args.get('flash_message'), 'success')
+    
     form = LoginForm()  # Add for CSRF token
     conn = None
     cursor = None
@@ -1287,12 +1290,12 @@ def toggle_otp(user_id):
         cursor.close()
         conn.close()
         status_text = 'enabled' if new_otp_status else 'disabled'
-        flash(f'2FA has been {status_text}.', 'success')
+        # Return success without redirecting, let frontend handle the flash
         return jsonify({'success': True, 'use_otp': new_otp_status})
     except Exception as e:
         logging.error(f"Toggle OTP error: {str(e)}")
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
-
+    
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()

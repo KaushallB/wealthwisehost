@@ -211,42 +211,52 @@
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const toggle2faSwitch = document.getElementById('toggle-2fa-switch');
-        if (toggle2faSwitch) {
-            toggle2faSwitch.addEventListener('change', function(e) {
-                const userId = this.getAttribute('data-user-id');
-                const isEnabled = this.checked;
-                fetch(`/toggle_otp/${userId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': '{{ form.csrf_token._value() if form else "" }}'
-                    },
-                    body: JSON.stringify({ use_otp: isEnabled })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert(`2FA has been ${isEnabled ? 'enabled' : 'disabled'} successfully!`);
-                    } else {
-                        alert(data.message || 'Error toggling 2FA');
+        document.addEventListener('DOMContentLoaded', function() {
+            const toggle2faSwitch = document.getElementById('toggle-2fa-switch');
+            if (toggle2faSwitch) {
+                toggle2faSwitch.addEventListener('change', function(e) {
+                    const userId = this.getAttribute('data-user-id');
+                    const isEnabled = this.checked;
+                    fetch(`/toggle_otp/${userId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': '{{ form.csrf_token._value() if form else "" }}'
+                        },
+                        body: JSON.stringify({ use_otp: isEnabled })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Instead of alert, trigger a flash message via a hidden form submit
+                            const flashForm = document.createElement('form');
+                            flashForm.method = 'POST';
+                            flashForm.action = '{{ url_for("dashboard", user_id=user.id) if user else url_for("login") }}';
+                            const flashInput = document.createElement('input');
+                            flashInput.type = 'hidden';
+                            flashInput.name = 'flash_message';
+                            flashInput.value = `2FA has been ${isEnabled ? 'enabled' : 'disabled'} successfully!`;
+                            flashForm.appendChild(flashInput);
+                            document.body.appendChild(flashForm);
+                            flashForm.submit();
+                        } else {
+                            alert(data.message || 'Error toggling 2FA');
+                            this.checked = !isEnabled; // Revert if failed
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error toggling 2FA');
                         this.checked = !isEnabled; // Revert if failed
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error toggling 2FA');
-                    this.checked = !isEnabled; // Revert if failed
+                    });
                 });
-            });
-        }
+            }
 
-        // Initialize tooltips
-        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-        [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-    });
-    </script>
+            // Initialize tooltips
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+        });
+</script>
     {% block scripts %}
     {% endblock %}
 </body>
