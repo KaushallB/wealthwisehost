@@ -5,22 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.min.css') }}">
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
-      <meta property="og:title" content="WealthWise - Finance Management System">
-        <meta property="og:description" content="Smart finance management for students and everyone! Track expenses, manage income, get AI-powered advice, and visualize spending patterns with WealthWise.">
-        <meta property="og:image" content="https://wealthwise-0y3c.onrender.com/static/assets/logowhite.png">
-        <meta property="og:image:width" content="600">
-        <meta property="og:image:height" content="600">
-        <meta property="og:image:alt" content="WealthWise Logo - Personal Finance Management">
-        <meta property="og:url" content="https://wealthwise-0y3c.onrender.com">
-        <meta property="og:type" content="website">
-        <meta property="og:site_name" content="WealthWise">
-        
-        <!-- SEO Meta Tags -->
-        <meta name="description" content="WealthWise - Perfect for students and anyone wanting to manage finances smartly. Track expenses, income, get AI advice, and generate detailed financial reports.">
-        <meta name="keywords" content="personal finance management, expense tracker, student budget, AI financial advice, financial data visualization">
-        
-        <!-- Favicon -->
-        <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/logowhite.png') }}">
+    <meta property="og:title" content="WealthWise - Finance Management System">
+    <meta property="og:description" content="Smart finance management for students and everyone! Track expenses, manage income, get AI-powered advice, and visualize spending patterns with WealthWise.">
+    <meta property="og:image" content="https://wealthwise-0y3c.onrender.com/static/assets/logowhite.png">
+    <meta property="og:image:width" content="600">
+    <meta property="og:image:height" content="600">
+    <meta property="og:image:alt" content="WealthWise Logo - Personal Finance Management">
+    <meta property="og:url" content="https://wealthwise-0y3c.onrender.com">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="WealthWise">
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="WealthWise - Perfect for students and anyone wanting to manage finances smartly. Track expenses, income, get AI advice, and generate detailed financial reports.">
+    <meta name="keywords" content="personal finance management, expense tracker, student budget, AI financial advice, financial data visualization">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/logowhite.png') }}">
     
     <title>WealthWise - Verify OTP | Smart Finance Management for Students & Anyone</title>
    
@@ -53,6 +53,26 @@
             color: #ffc107;
             text-decoration: underline;
         }
+        .info-text {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffffff; /* Matches text-white */
+            font-size: 16px;
+            font-weight: bold; /* Makes it stand out */
+            background-color: #D79922; /* Highlight background */
+            padding: 10px;
+            border-radius: 5px; /* Rounded corners for a modern look */
+            animation: pulse 2s infinite; /* Subtle pulsing effect */
+        }
+        .info-text:hover {
+            color: #ffc107; /* Changes text color on hover for engagement */
+            background-color: #b57b1a; /* Darker shade on hover */
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
@@ -77,7 +97,7 @@
                                             {% endfor %}
                                         {% endif %}
                                     {% endwith %}
-                                   <form method="POST" action="{{ url_for('verify_otp') }}">
+                                    <form method="POST" action="{{ url_for('verify_otp') }}">
                                         {{ form.hidden_tag() }} 
                                         <div class="logo-container">
                                             <img class="w-25 img-fluid" src="{{ url_for('static', filename='assets/logowhite.png') }}" alt="logo"/>
@@ -109,6 +129,9 @@
                                         </div>
                                         <div class="resend">
                                             <p class="mb-2 text-light">Didn't receive the OTP? <a href="{{ url_for('resend_otp') }}" class="resend-link">Resend OTP</a></p>
+                                        </div>
+                                        <div class="info-text">
+                                            <p>You can disable OTP verification by clicking the profile icon after logging in.</p>
                                         </div>
                                     </form>
                                 </div>
