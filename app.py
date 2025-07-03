@@ -602,7 +602,7 @@ def chatbot(user_id):
             try:
                 api_key = os.environ.get('GEMINI_API_KEY', 'AIzaSyB7pR7-troHzMtol6RuaUnnVpxU1xBeS6w')  # Use env var or fallback to new key
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel('gemini-2.5-flash')
+                model = genai.GenerativeModel('gemini-1.0-pro')
                 response = model.generate_content(user_message)
                 ai_response = response.text
                 new_context = f"{context}\nUser: {user_message}\nAI: {ai_response}".strip()
