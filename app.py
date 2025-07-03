@@ -24,6 +24,8 @@ import zipfile
 import io
 import logging
 import requests
+from langchain.prompts import ChatPromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
 
@@ -51,7 +53,7 @@ else:
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'WealthWise')
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 app.config['TESTING'] = False
 app.config['MAIL_DEBUG'] = True
 app.config['MAIL_SUPPRESS_SEND'] = False
@@ -599,20 +601,42 @@ def chatbot(user_id):
         conn.close()
         if request.method == 'POST':
             user_message = request.form.get('message', '').strip()
-            context = request.form.get('context', '').strip()
+            context = request.form.get('context', '').strip() or ""
             if not user_message:
                 return jsonify({'response': 'Please enter a message.'}), 400
             try:
-                api_key = os.environ.get('GEMINI_API_KEY', 'AIzaSyB7pR7-troHzMtol6RuaUnnVpxU1xBeS6w')  # Use env var or fallback to new key
-                genai.configure(api_key=api_key)
-                model = genai.GenerativeModel('gemini-1.0-pro')
-                response = model.generate_content(user_message)
-                ai_response = response.text
+                api_key = os.environ.get('GEMINI_API_KEY')
+                if not api_key:
+                    raise ValueError("API key not found in environment variables.")
+                model = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+                template = """
+                You are a financial advisor for WealthWise, a finance management, advising, and recommendation app for students in Nepal. Provide concise, accurate financial advice (under 100 words) in NPR, focusing on budgeting and differentiating needs vs. wants. 
+                Needs are essential expenses (e.g., rent, groceries, utilities); wants are non-essential (e.g., entertainment, dining out). 
+                The average income of Nepalese students is from around Rs 5000.00 to Rs 25000.00.
+                Use the user's financial data. Stay professional, avoid non-financial topics, and do not ask questions unless prompted. 
+                If the query is unclear, suggest asking about budgeting or expenses.
+
+                User's financial data: {financial_data}
+
+                Conversation history: {context}
+
+                Question: {question}
+
+                Answer:
+                """
+                prompt = ChatPromptTemplate.from_template(template)
+                chain = prompt | model
+                responseofai = chain.invoke({
+                    "financial_data": financial_data,
+                    "context": context,
+                    "question": user_message
+                })
+                ai_response = responseofai.content if hasattr(responseofai, 'content') else str(responseofai)
                 new_context = f"{context}\nUser: {user_message}\nAI: {ai_response}".strip()
                 return jsonify({'response': ai_response, 'context': new_context})
             except Exception as ai_error:
                 logging.error(f"Gemini API error: {str(ai_error)} - User: {user_id}")
-                return jsonify({'response': 'Sorry, the AI assistant is temporarily unavailable. Please try again later or contact support.'}), 500
+                return jsonify({'response': f'API Error: {str(ai_error)}. Please try again later or contact support.'}), 500
         prefilled_question = request.args.get('question', '')
         return render_template('chatbot.html', user=user, full_name=full_name, prefilled_question=prefilled_question)
     except Exception as e:
