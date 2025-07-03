@@ -1077,7 +1077,7 @@ def download_reports(user_id):
         cursor.close()
         conn.close()
         if not data:
-            flash('No transaction data available for download.', 'warning')
+            flash('No transaction data available for download. Please add transactions first.', 'danger')
             return redirect(url_for('dashboard', user_id=user_id))
         df = pd.DataFrame(
             [(row['date'], row['category'], row['amount'], row['transaction_type']) for row in data],
@@ -1087,7 +1087,7 @@ def download_reports(user_id):
         df['AMOUNT'] = pd.to_numeric(df['AMOUNT'], errors='coerce')
         df = df.dropna(subset=['AMOUNT'])
         if df.empty:
-            flash('No valid transaction data found after processing.', 'warning')
+            flash('No valid transaction data found after processing.', 'danger')
             return redirect(url_for('dashboard', user_id=user_id))
         excel_filename = f'{full_name}_transactions.xlsx'
         excel_buffer = io.BytesIO()
@@ -1190,6 +1190,7 @@ def download_reports(user_id):
         logging.error(f"Download reports error: {str(e)}")
         flash(f'Error downloading reports: {str(e)}', 'danger')
         return redirect(url_for('dashboard', user_id=user_id))
+    
 
 #VIEWREPORTS
 @app.route('/view_reports/<int:user_id>')
