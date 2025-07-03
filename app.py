@@ -18,7 +18,7 @@ import psycopg2
 from psycopg2.extras import DictCursor
 from dotenv import load_dotenv
 import pytz
-import google.generativeai as genai
+from google import genai
 from flask import send_file
 import zipfile
 import io
@@ -604,21 +604,11 @@ def chatbot(user_id):
                     api_key = os.environ.get('GEMINI_API_KEY')
                 else:
                     api_key = 'AIzaSyBaze8MZi4ZxPWWV0w1dFs50_07lyWtcOs'
-                client = genai.Client(api_key=api_key)
-                prompt = f"""
-                You are a financial advisor for WealthWise, a finance management app for students in Nepal. 
-                Provide concise, accurate financial advice (under 100 words) in NPR, focusing on budgeting and differentiating needs vs. wants.
-                Needs are essential expenses (rent, groceries, utilities); wants are non-essential (entertainment, dining out).
-                Average income of Nepalese students: Rs 5,000-25,000.
-                User's financial data: {financial_data}
-                Previous conversation: {context}
-                User question: {user_message}
-                Provide helpful financial advice. Please answer in two sentences or less.
-                """
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=prompt
-                )
+                # Configure the API key
+                genai.configure(api_key=api_key)
+                # Use the generative model
+                model = genai.GenerativeModel('gemini-2.5-flash')
+                response = model.generate_content(user_message)
                 ai_response = response.text
                 new_context = f"{context}\nUser: {user_message}\nAI: {ai_response}".strip()
                 return jsonify({'response': ai_response, 'context': new_context})
