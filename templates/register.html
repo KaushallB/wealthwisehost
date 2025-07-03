@@ -147,13 +147,13 @@
                                                         <path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
                                                     </svg>
                                                 </span>
-                                                {{ form.phone_num(class="form-control form-control-lg", placeholder="+977 1234567890", id="phone_num") }}
+                                                {{ form.phone_num(class="form-control form-control-lg", placeholder="+977 9805......", id="phone_num") }}
                                                 {% for error in form.phone_num.errors %}
                                                     <div class="text-danger">{{ error }}</div>
                                                 {% endfor %}
                                             </div>
                                             <div class="checklist" id="phone-checklist">
-                                                <div id="phone-format-check" class="invalid">10 digits, optionally with +977</div>
+                                                <div id="phone-format-check" class="invalid">10 digits, Country Code is optional</div>
                                             </div>
                                         </div>
                                         <div data-mdb-input-init class="form-outline mb-4">
@@ -185,10 +185,10 @@
                                             </div>
                                             <div class="checklist" id="password-checklist">
                                                 <div id="length-check" class="invalid">At least 8 characters</div>
-                                                <div id="uppercase-check" class="invalid">One uppercase letter</div>
-                                                <div id="lowercase-check" class="invalid">One lowercase letter</div>
-                                                <div id="number-check" class="invalid">One number</div>
-                                                <div id="special-check" class="invalid">One special character (e.g., @$!%*?&)</div>
+                                                <div id="uppercase-check" class="invalid">At least one uppercase letter</div>
+                                                <div id="lowercase-check" class="invalid">At least one lowercase letter</div>
+                                                <div id="number-check" class="invalid">At least one number</div>
+                                                <div id="special-check" class="invalid">At least one special character (e.g., @$!%*?&)</div>
                                             </div>
                                         </div>
                                         <div data-mdb-input-init class="form-outline mb-4">
