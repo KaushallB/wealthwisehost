@@ -349,7 +349,7 @@ body {
             <div class="mb-3 d-flex align-items-center">
                 <div class="flex-grow-1">
                     <label for="description" class="form-label">Description</label>
-                    <input type="text" id="description" name="description" class="form-control" placeholder="Add a note (e.g., Grocery shopping)" value="{{ expense.description if expense else '' }}">
+                    <input type="text" id="description" name="description" class="form-control" placeholder="Not sure about your type of expense? Type it and click on the Ask Chatbot Button" value="{{ expense.description if expense else '' }}">
                 </div>
                 <button type="button" id="chatbot-btn" class="chatbot-btn" onclick="openChatbot()">
                     <i class="bi bi-chat-fill"></i> Ask Chatbot

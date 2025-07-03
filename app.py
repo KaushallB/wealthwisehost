@@ -375,7 +375,6 @@ def reset_password(token):
     return render_template('reset_password.html', form=form, token=token)
 
 #REGISTRATION
-
 @app.route('/registration', methods=['GET', 'POST'])
 def registration():
     form = RegistrationForm()
@@ -412,9 +411,9 @@ def registration():
             else:
                 hash_pw = enc.generate_password_hash(pw).decode('utf-8')
                 cursor.execute('''
-                    INSERT INTO users (full_name, email, phone_number, address, password_hash)
-                    VALUES (%s, %s, %s, %s, %s)
-                ''', (full_name, email, phone_num, address, hash_pw))
+                    INSERT INTO users (full_name, email, phone_number, address, password_hash, use_otp)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                ''', (full_name, email, phone_num, address, hash_pw, True))
                 conn.commit()
                 try:
                     msg = Message("Welcome to WealthWise!", recipients=[email])
@@ -435,6 +434,7 @@ def registration():
                 conn.rollback()
                 conn.close()
     return render_template('register.html', form=form)
+
 #LOGOUT
 @app.route('/logout')
 def logout():
