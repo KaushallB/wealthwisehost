@@ -1300,6 +1300,13 @@ def view_reports(user_id):
 def toggle_otp(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
         return jsonify({'success': False, 'message': 'Unauthorized access.'}), 403
+    # Initialize CSRF token in session if not present
+    if '_csrf_token' not in session:
+        session['_csrf_token'] = os.urandom(16).hex()
+    # Get CSRF token from request headers or form data
+    csrf_token = request.headers.get('X-CSRF-Token') or request.form.get('csrf_token')
+    if not csrf_token or csrf_token != session.get('_csrf_token'):
+        return jsonify({'success': False, 'message': 'Invalid CSRF token.'}), 400
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=DictCursor)
@@ -1309,16 +1316,22 @@ def toggle_otp(user_id):
             cursor.close()
             conn.close()
             return jsonify({'success': False, 'message': 'User not found.'}), 404
-        new_otp_status = not user['use_otp']
+        # Get the new OTP status from the request body
+        data = request.get_json()
+        new_otp_status = data.get('use_otp', not user['use_otp'])  # Default to toggling if not provided
         cursor.execute('UPDATE users SET use_otp = %s WHERE id = %s', (new_otp_status, user_id))
         conn.commit()
         cursor.close()
         conn.close()
         status_text = 'enabled' if new_otp_status else 'disabled'
-        # Return success without redirecting, let frontend handle the flash
+        # Update session to reflect the new state
+        session.modified = True  # Ensure session is updated
         return jsonify({'success': True, 'use_otp': new_otp_status})
     except Exception as e:
         logging.error(f"Toggle OTP error: {str(e)}")
+        if 'conn' in locals():
+            conn.rollback()
+            conn.close()
         return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
     
 if __name__ == '__main__':
