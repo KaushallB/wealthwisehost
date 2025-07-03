@@ -600,25 +600,20 @@ def chatbot(user_id):
             if not user_message:
                 return jsonify({'response': 'Please enter a message.'}), 400
             try:
-                if os.environ.get('RENDER'):
-                    api_key = os.environ.get('GEMINI_API_KEY')
-                else:
-                    api_key = 'AIzaSyBaze8MZi4ZxPWWV0w1dFs50_07lyWtcOs'
-                # Configure the API key
+                api_key = os.environ.get('GEMINI_API_KEY', 'AIzaSyB7pR7-troHzMtol6RuaUnnVpxU1xBeS6w')  # Use env var or fallback to new key
                 genai.configure(api_key=api_key)
-                # Use the generative model
                 model = genai.GenerativeModel('gemini-2.5-flash')
                 response = model.generate_content(user_message)
                 ai_response = response.text
                 new_context = f"{context}\nUser: {user_message}\nAI: {ai_response}".strip()
                 return jsonify({'response': ai_response, 'context': new_context})
             except Exception as ai_error:
-                logging.error(f"Gemini API error: {str(ai_error)}")
-                return jsonify({'response': 'Sorry, the AI assistant is temporarily unavailable. Please try again later.'}), 500
+                logging.error(f"Gemini API error: {str(ai_error)} - User: {user_id}")
+                return jsonify({'response': 'Sorry, the AI assistant is temporarily unavailable. Please try again later or contact support.'}), 500
         prefilled_question = request.args.get('question', '')
         return render_template('chatbot.html', user=user, full_name=full_name, prefilled_question=prefilled_question)
     except Exception as e:
-        logging.error(f"Chatbot error: {str(e)}")
+        logging.error(f"Chatbot error: {str(e)} - User: {user_id}")
         if 'conn' in locals():
             conn.close()
         return jsonify({'response': f'Error: {str(e)}'}), 500
