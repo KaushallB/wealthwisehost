@@ -72,6 +72,19 @@
             margin-left: 10px;
             font-weight: bold;
         }
+        .profile-dropdown {
+            cursor: pointer;
+        }
+        .profile-dropdown:hover img {
+            transform: scale(1.1);
+            transition: transform 0.3s ease;
+        }
+        .profile-dropdown .dropdown-menu {
+            min-width: 200px;
+        }
+        .dropdown-item label {
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -144,12 +157,13 @@
                             </a>
                         </li>
                         <li class="nav-item dropdown">
-                            <a href="#" data-bs-toggle="dropdown" class="nav-icon pe-md-0">
+                            <a href="#" data-bs-toggle="dropdown" class="nav-icon pe-md-0 profile-dropdown" title="Click to manage your settings" data-bs-toggle="tooltip" data-bs-placement="bottom">
                                 <img src="{{ url_for('static', filename='assets/profile.jpg') }}" class="avatar img-fluid round" alt="Profilepic">
                             </a>
                             <div class="dropdown-menu dropdown-menu-end">
+                                <h6 class="dropdown-header">Profile Settings</h6>
                                 <label class="dropdown-item d-flex align-items-center">
-                                    <span class="switch-label">2FA</span>
+                                    <span class="switch-label">2FA <i class="bi bi-shield-lock-fill" style="color: #28a745;"></i></span>
                                     <div class="switch">
                                         <input type="checkbox" id="toggle-2fa-switch" data-user-id="{{ user['id'] }}" 
                                                {% if user['use_otp'] %}checked{% endif %}>
@@ -227,6 +241,10 @@
                 });
             });
         }
+
+        // Initialize tooltips
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
     });
     </script>
     {% block scripts %}
