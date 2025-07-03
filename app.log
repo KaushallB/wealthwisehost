@@ -1,0 +1,321 @@
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.101:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:10:43] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:10:43] "GET /static/assets/finance.png HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:10:43] "GET /static/assets/logowhite.png HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:10:43] "GET /static/css/main.min.css HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:10:43] "GET /static/js/bootstrap.bundle.min.js HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:10:43] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:10:45] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:10:45] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:10:45] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:10:45] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:10:45] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:12:34] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:12:34] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:12:34] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:12:34] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:12:34] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:13] "[32mGET / HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:14] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:14] "GET /static/css/main.min.css HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:14] "GET /static/js/bootstrap.bundle.min.js HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:14] "GET /static/assets/finance.png HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:14] "GET /static/assets/logowhite.png HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:14] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:28] "POST /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:28] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:28] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:28] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:28] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:33] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:37] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:37] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:37] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:37] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:37] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:41] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:41] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:41] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:41] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:41] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:56] "[32mPOST /registration HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:56] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:56] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:56] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:56] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:13:56] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:18] "[32mPOST /registration HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:18] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:18] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:18] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:18] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:18] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:29] "POST /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:29] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:30] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:30] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:30] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:35] "POST /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:35] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:35] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:35] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:35] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:42] "[32mPOST /login HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:42] "GET /verify_otp HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:42] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:42] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:42] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:42] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:52] "[32mPOST /verify_otp HTTP/1.1[0m" 302 -
+ERROR:root:Dashboard error: 'psycopg2.extras.DictRow object' has no attribute 'id'
+Traceback (most recent call last):
+  File "c:\Users\Acer\Desktop\wealthwisehost\app.py", line 518, in dashboard
+    return render_template('dashboard.html',
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\flask\templating.py", line 151, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\flask\templating.py", line 132, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\jinja2\environment.py", line 1304, in render
+    self.environment.handle_exception()
+  File "C:\Users\Acer\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\jinja2\environment.py", line 939, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "c:\Users\Acer\Desktop\wealthwisehost\templates\dashboard.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "c:\Users\Acer\Desktop\wealthwisehost\templates\base.html", line 34, in top-level template code
+    <a href="{{ url_for('dashboard', user_id=user.id) }}">
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\flask\app.py", line 1686, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\werkzeug\routing\map.py", line 948, in build
+    rv = self._partial_build(endpoint, values, method, append_unknown)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\werkzeug\routing\map.py", line 827, in _partial_build
+    rv = self._partial_build(
+         ^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\werkzeug\routing\map.py", line 840, in _partial_build
+    build_rv = rule.build(values, append_unknown)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Acer\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\werkzeug\routing\rules.py", line 836, in build
+    return self._build_unknown(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<werkzeug routing>", line 1, in <builder:'/dashboard/<int:user_id>'>
+  File "C:\Users\Acer\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.11_qbz5n2kfra8p0\LocalCache\local-packages\Python311\site-packages\werkzeug\routing\converters.py", line 172, in to_url
+    value = str(self.num_convert(value))
+                ^^^^^^^^^^^^^^^^^^^^^^^
+jinja2.exceptions.UndefinedError: 'psycopg2.extras.DictRow object' has no attribute 'id'
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:53] "[32mGET /dashboard/3 HTTP/1.1[0m" 302 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:53] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:53] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:53] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:53] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:14:53] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:17:51] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:17:51] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:17:51] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:17:51] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:17:51] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:17:54] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:17:54] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:17:54] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:17:54] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:17:54] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:17:54] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:22] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:22] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:22] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:22] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:22] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:22] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:50] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:51] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:51] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:51] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:51] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:51] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:51] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:53] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:53] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:53] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:53] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:53] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:18:53] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.101:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:21] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:21] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:21] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:21] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:21] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:21] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:40] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:40] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:40] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:40] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:40] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:41] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:42] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:42] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:42] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:42] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:50] "GET /login HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:50] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:50] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:50] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:50] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:50] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:52] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:52] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:52] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:19:52] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.101:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:42] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:42] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:42] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:42] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:42] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:43] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:44] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:45] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:45] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:45] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:45] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:45] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:45] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:45] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:45] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:45] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:20:45] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:07] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:07] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:07] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:07] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:07] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:07] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:08] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.0.101:5000
+INFO:werkzeug:[33mPress CTRL+C to quit[0m
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:40] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:40] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:40] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:40] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:40] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:52] "GET /registration HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:52] "[36mGET /static/css/main.min.css HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:52] "[36mGET /static/assets/finance.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:52] "[36mGET /static/js/bootstrap.bundle.min.js HTTP/1.1[0m" 304 -
+INFO:werkzeug:127.0.0.1 - - [02/Jul/2025 18:21:52] "[36mGET /static/assets/logowhite.png HTTP/1.1[0m" 304 -

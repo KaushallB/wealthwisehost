@@ -18,7 +18,7 @@ import psycopg2
 from psycopg2.extras import DictCursor
 from dotenv import load_dotenv
 import pytz
-from google import genai
+import google.generativeai as genai
 from flask import send_file
 import zipfile
 import io
@@ -507,8 +507,8 @@ def dashboard(user_id):
         wants_remaining = max(Decimal(0), wants_limit - wants_spent)
         savings_remaining = max(Decimal(0), savings_target - savings_made)
         
-        # Get user info
-        cursor.execute("SELECT full_name, use_otp FROM users WHERE id = %s", (user_id,))
+        # Get user info including id
+        cursor.execute("SELECT id, full_name, use_otp FROM users WHERE id = %s", (user_id,))
         user = cursor.fetchone()
         
         if not user:
