@@ -85,6 +85,7 @@
         .dropdown-item label {
             width: 100%;
         }
+        /* New styles to handle sidebar collapse on small screens */
         #sidebar {
             position: fixed;
             top: 0;
@@ -94,42 +95,28 @@
             transition: transform 0.3s ease-in-out;
             transform: translateX(-100%);
             z-index: 1000;
-            background-color: #1a1a1a;
         }
         #sidebar.active {
             transform: translateX(0);
         }
+        @media (min-width: 768px) {
+            #sidebar {
+                transform: translateX(0);
+            }
+        }
         .main {
             margin-left: 0;
             transition: margin-left 0.3s ease-in-out;
-            min-height: 100vh;
         }
         #sidebar.active ~ .main {
             margin-left: 250px;
         }
         #sidebar-toggle {
             display: block;
-            margin-right: 10px;
-        }
-        .content {
-            padding-top: 20px;
-            padding-bottom: 20px;
-        }
-        .welcome-text {
-            margin-bottom: 15px;
-        }
-        .budget-overview {
-            margin-top: 20px;
-        }
-        .card {
-            margin-bottom: 15px;
         }
         @media (min-width: 768px) {
-            .main {
-                margin-left: 250px;
-            }
-            #sidebar {
-                transform: translateX(0);
+            #sidebar-toggle {
+                display: none;
             }
         }
     </style>
@@ -227,77 +214,7 @@
             <main class="content px-3 py-2">
                 <div class="container">
                     <div class="mb-3 text-center">
-                        <h3 class="welcome-text">Welcome, {{ user['full_name'] }}</h3>
-                        <div class="budget-overview text-center">
-                            <h4>July 2025 Budget Overview</h4>
-                            <small class="text-muted">Monthly budget resets every month to help you stay on track</small>
-                        </div>
-                    </div>
-                    <!-- Budget Cards -->
-                    <div class="row g-3">
-                        <div class="col-12 col-md-4">
-                            <div class="card text-white bg-success">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Monthly Income</h5>
-                                    <h3 class="card-text">Rs 0.0</h3>
-                                    <p class="card-text"><small>This Month Only</small></p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <div class="card text-white bg-danger">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Monthly Expenses</h5>
-                                    <h3 class="card-text">Rs 0.0</h3>
-                                    <p class="card-text"><small>This Month Only</small></p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <div class="card text-white bg-warning">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Monthly 50/30/20 Budget</h5>
-                                    <p class="card-text">Needs (50%) Rs 0.0 <span class="text-muted">Limit</span></p>
-                                    <p class="card-text">Wants (30%) Rs 0.0 <span class="text-muted">Target</span></p>
-                                    <p class="card-text">Savings (20%) Rs 0.0 <span class="text-muted">Target</span></p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Monthly Budget Progress</h5>
-                                    <!-- Placeholder for chart or progress -->
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <div class="card text-white bg-secondary">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Needs Budget</h5>
-                                    <h6 class="card-text">Rs 0.0 / Rs 0.0</h6>
-                                    <p class="card-text"><small>Add monthly income to set budget</small></p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <div class="card text-white bg-secondary">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Wants Budget</h5>
-                                    <h6 class="card-text">Rs 0.0 / Rs 0.0</h6>
-                                    <p class="card-text"><small>Add monthly income to set budget</small></p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-12 col-md-4">
-                            <div class="card text-white bg-success">
-                                <div class="card-body text-center">
-                                    <h5 class="card-title">Savings Progress</h5>
-                                    <h6 class="card-text">Rs 0.0 / Rs 0.0</h6>
-                                    <p class="card-text"><small>Add monthly income to set target</small></p>
-                                </div>
-                            </div>
-                        </div>
+                        <h3 class="welcome-text mb-0">Welcome, {{ user['full_name'] }}</h3>
                     </div>
                     <!-- Flash Messages -->
                     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -310,6 +227,7 @@
                             {% endfor %}
                         {% endif %}
                     {% endwith %}
+                    <!-- Main content block -->
                     {% block main_content %}
                     {% endblock %}
                 </div>
@@ -337,20 +255,20 @@
                 main.classList.toggle('active');
             });
 
-            // Ensure sidebar is visible on larger screens by default
-            if (window.innerWidth >= 768) {
-                sidebar.classList.add('active');
-                main.classList.add('active');
+            // Collapse sidebar on page load for screens smaller than 768px
+            if (window.innerWidth < 768) {
+                sidebar.classList.remove('active');
+                main.classList.remove('active');
             }
 
-            // Adjust sidebar on resize
+            // Collapse sidebar when window is resized below 768px
             window.addEventListener('resize', function() {
-                if (window.innerWidth >= 768) {
-                    sidebar.classList.add('active');
-                    main.classList.add('active');
-                } else {
+                if (window.innerWidth < 768) {
                     sidebar.classList.remove('active');
                     main.classList.remove('active');
+                } else {
+                    sidebar.classList.add('active');
+                    main.classList.add('active');
                 }
             });
 
