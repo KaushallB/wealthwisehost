@@ -1,327 +1,249 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}WealthWise{% endblock %}</title>
-    
-    <!-- Open Graph Metadata -->
-    <meta property="og:title" content="WealthWise - Finance Management System">
-    <meta property="og:description" content="Smart finance management for students and everyone! Track expenses, manage income, get AI-powered advice, and visualize spending patterns with WealthWise.">
-    <meta property="og:image" content="https://wealthwise-0y3c.onrender.com/static/assets/logowhite.png">
-    <meta property="og:image:width" content="600">
-    <meta property="og:image:height" content="600">
-    <meta property="og:image:alt" content="WealthWise Logo - Personal Finance Management">
-    <meta property="og:url" content="https://wealthwise-0y3c.onrender.com">
-    <meta property="og:type" content="website">
-    <meta property="og:site_name" content="WealthWise">
-    
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="WealthWise - Perfect for students and anyone wanting to manage finances smartly. Track expenses, income, get AI advice, and generate detailed financial reports.">
-    <meta name="keywords" content="personal finance management, expense tracker, student budget, AI financial advice, financial data visualization">
-    
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='assets/logowhite.png') }}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <style>
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-        }
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-        input:checked + .slider {
-            background-color: #28a745;
-        }
-        input:focus + .slider {
-            box-shadow: 0 0 1px #28a745;
-        }
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
-        .switch-label {
-            margin-left: 10px;
-            font-weight: bold;
-        }
-        .profile-dropdown {
-            cursor: pointer;
-        }
-        .profile-dropdown:hover img {
-            transform: scale(1.1);
-            transition: transform 0.3s ease;
-        }
-        .profile-dropdown .dropdown-menu {
-            min-width: 200px;
-        }
-        .dropdown-item label {
-            width: 100%;
-        }
-        #sidebar {
-            position: fixed;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            width: 250px;
-            transition: transform 0.3s ease-in-out;
-            transform: translateX(-100%);
-            z-index: 1000;
-            background-color: #1a1a1a;
-        }
-        #sidebar.active {
-            transform: translateX(0);
-        }
-        .main {
-            margin-left: 0;
-            transition: margin-left 0.3s ease-in-out;
-            min-height: 100vh;
-        }
-        #sidebar.active ~ .main {
-            margin-left: 250px;
-        }
-        #sidebar-toggle {
-            display: block;
-            margin-right: 10px;
-        }
-        .content {
-            padding-top: 20px;
-            padding-bottom: 20px;
-        }
-        .welcome-text {
-            margin-bottom: 15px;
-        }
-        .budget-overview {
-            margin-top: 20px;
-        }
-        .card {
-            margin-bottom: 15px;
-        }
-        @media (min-width: 768px) {
-            .main {
-                margin-left: 250px;
-            }
-            #sidebar {
-                transform: translateX(0);
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="wrapper">
-        <aside id="sidebar">
-            <div class="h-100">
-                <div class="sidebar-logo">
-                    <a href="{{ url_for('dashboard', user_id=user.id) }}">
-                        <img src="{{ url_for('static', filename='assets/logon.png') }}" alt="logo" class="w-75" style="border-radius: 1rem 0 0 1rem;" />
-                    </a>   
-                </div>
-                <ul class="sidebar-nav">
-                    <li class="sidebar-header">User Control Panel</li>
-                    <li class="sidebar-item">
-                        <a href="{{ url_for('dashboard', user_id=user['id']) }}" class="sidebar-link">
-                            <i class="bi bi-speedometer2"></i>
-                            Dashboard
-                        </a>
-                    </li>
-                    <li class="sidebar-item">
-                        <a href="#" class="sidebar-link collapsed" data-bs-target="#transactions" data-bs-toggle="collapse" aria-expanded="false">
-                            <i class="bi bi-coin"></i>
-                            Transactions
-                        </a>
-                        <ul id="transactions" class="sidebar-dropdown list-unstyled collapse" data-bs-parent="#sidebar">
-                            <li class="sidebar-item">
-                                <a href="{{ url_for('add_income', user_id=user['id']) }}" class="sidebar-link">Add Income</a>
-                            </li>
-                            <li class="sidebar-item">
-                                <a href="{{ url_for('add_expense', user_id=user['id']) }}" class="sidebar-link">Add Expenses/Savings</a>
-                            </li>
-                            <li class="sidebar-item">
-                                <a href="{{ url_for('view_reports', user_id=user['id']) }}" class="sidebar-link">View Reports</a>
-                            </li>
-                        </ul>
-                    </li>
-                    <li class="sidebar-item">
-                        <a href="{{ url_for('chatbot', user_id=user.id) }}" class="sidebar-link">
-                            <i class="bi bi-robot"></i>
-                            Chatbot
-                        </a>
-                    </li>
-                    <li class="sidebar-item">
-                        <a href="{{ url_for('visualize', user_id=user['id']) }}" class="sidebar-link">
-                            <i class="bi bi-bar-chart"></i>
-                            Generate Reports
-                        </a>
-                    </li>
-                    <li class="sidebar-item">
-                        <a href="{{ url_for('logout') }}" class="sidebar-link">
-                            <i class="bi bi-box-arrow-left"></i>
-                            Logout
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        </aside>
-        
-        <div class="main">
-            <nav class="navbar navbar-expand px-3 border-bottom">
-                <button class="btn" id="sidebar-toggle" type="button">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse navbar">
-                    <ul class="navbar-nav">
-                        <li class="nav-item dropdown">
-                            <a href="#" class="theme-toggle">
-                                <i class="bi bi-brightness-low"></i>
-                                <i class="bi bi-moon-fill"></i>
-                            </a>
-                        </li>
-                        <li class="nav-item dropdown">
-                            <a href="#" data-bs-toggle="dropdown" class="nav-icon pe-md-0 profile-dropdown" title="Click to manage your settings" data-bs-toggle="tooltip" data-bs-placement="bottom">
-                                <img src="{{ url_for('static', filename='assets/profile.jpg') }}" class="avatar img-fluid round" alt="Profilepic">
-                            </a>
-                            <div class="dropdown-menu dropdown-menu-end">
-                                <h6 class="dropdown-header">Profile Settings</h6>
-                                <label class="dropdown-item d-flex align-items-center">
-                                    <span class="switch-label">2FA <i class="bi bi-shield-lock-fill" style="color: #28a745;"></i></span>
-                                    <div class="switch">
-                                        <input type="checkbox" id="toggle-2fa-switch" data-user-id="{{ user['id'] }}" 
-                                               {% if user['use_otp'] %}checked{% endif %}>
-                                        <span class="slider"></span>
-                                    </div>
-                                </label>
-                                <a href="{{ url_for('logout') }}" class="dropdown-item">Logout</a>
-                            </div>
-                        </li>
-                    </ul>
-                </div>
-            </nav>
-                    <!-- Flash Messages -->
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
-                    {% block main_content %}
-                    {% endblock %}
-                </div>
-            </main>
-            
-            <footer class="footer mt-auto py-3 bg-dark border-top">
-                <div class="container text-center">
-                    <span class="text-light">© 2025 WealthWise. Developed by <strong>Kaushal</strong></span>
-                </div>
-            </footer>
+{% extends "base.html" %}
+
+{% block title %}Dashboard - WealthWise{% endblock %}
+
+{% block main_content %}
+<!-- Month Selector and Current Period Info -->
+<div class="row mb-3">
+    <div class="col-12">
+            <div class="card p-3 text-white align-items-center" style="background-color: #f47573;">
+            <h5 class="mb-0">{{ current_month_name }} {{ current_year }} Budget Overview</h5>
+            <small>Monthly budget resets every month to help you stay on track</small>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-HjW8v0j/fcO5z3XqI2q3Xv7lX5u5f7f5g5h5i5j5k5l5m5n5o5p5q5r5s5t5u5v5w5x5y5z" crossorigin="anonymous"></script>
-    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.getElementById('sidebar-toggle');
-            const sidebar = document.getElementById('sidebar');
-            const main = document.querySelector('.main');
+</div>
 
-            sidebarToggle.addEventListener('click', function() {
-                sidebar.classList.toggle('active');
-                main.classList.toggle('active');
-            });
 
-            // Ensure sidebar is visible on larger screens by default
-            if (window.innerWidth >= 768) {
-                sidebar.classList.add('active');
-                main.classList.add('active');
-            }
+<!-- First Row: Monthly Income, Monthly Expenses, 50/30/20 Budget Allocation -->
+<div class="row g-3 mb-3 justify-content-center">
+    <div class="col-12 col-md-4 col-lg-3">
+        <div class="card p-2 bg-success text-white text-center">
+            <div class="card-title fs-6">Monthly Income</div>
+            <h4 class="mb-1 text-white">Rs {{ monthly_income|default(0)|float|round(2) }}</h4>
+            <small>This Month Only</small>
+        </div>
+    </div>
+    <div class="col-12 col-md-4 col-lg-3">
+        <div class="card p-2 bg-danger text-white text-center">
+            <div class="card-title fs-6">Monthly Expenses</div>
+            <h4 class="mb-1 text-white">Rs {{ monthly_expenses|default(0)|float|round(2) }}</h4>
+            <small>This Month Only</small>
+        </div>
+    </div>
+    <div class="col-12 col-md-4 col-lg-4">
+        <div class="card p-2 bg-yellow" style="background: #EFB11D;">
+            <div class="card-title text-center fs-6 text-white fw-600">Monthly 50/30/20 Budget</div>
+            <div class="row g-2 justify-content-center">
+                <div class="col-4 bg-purple text-white p-2" style="background: #a084e8;">
+                    <h6 class="mb-0">Needs (50%)</h6>
+                    <p class="mb-0">Rs {{ needs_limit|default(0)|float|round(2) }}</p>
+                    <small>Limit</small>
+                </div> 
+                <div class="col-4 bg-blue text-white p-2" style="background: #4056A1;">
+                    <h6 class="mb-0">Wants (30%)</h6>
+                    <p class="mb-0">Rs {{ wants_limit|default(0)|float|round(2) }}</p>
+                    <small>Limit</small>
+                </div>
+                <div class="col-4 bg-info text-white p-2">
+                    <h6 class="mb-0">Savings (20%)</h6>
+                    <p class="mb-0">Rs {{ savings_target|default(0)|float|round(2) }}</p>
+                    <small>Target</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-            // Adjust sidebar on resize
-            window.addEventListener('resize', function() {
-                if (window.innerWidth >= 768) {
-                    sidebar.classList.add('active');
-                    main.classList.add('active');
-                } else {
-                    sidebar.classList.remove('active');
-                    main.classList.remove('active');
+<!-- Second Row: Budget Progress Cards with Limits -->
+<div class="row g-3 mb-3 justify-content-center">
+    <div class="col-12 col-md-6 col-lg-4">
+        <div class="card p-2">
+            <div class="card-title text-center fs-6">Monthly Budget Progress</div>
+            <canvas id="budgetProgressChart" style="max-height: 300px;"></canvas>
+        </div>
+    </div>
+    <div class="col-12 col-md-6 col-lg-4 justify-content-center">
+        <div class="d-flex flex-column gap-3">
+            <!-- Needs Budget Card -  -->
+            <div class="card p-2 text-center" style="background: 
+                {% set needs_limit_float = needs_limit|default(0)|float %}
+                {% set needs_spent_float = needs_spent|default(0)|float %}
+                {% if needs_limit_float == 0 %} #6c757d
+                {% elif needs_spent_float > needs_limit_float %} #dc3545
+                {% elif needs_limit_float > 0 and (needs_spent_float/needs_limit_float*100) > 80 %} #ffc107
+                {% else %} #FF7FAA
+                {% endif %};">
+                <div class="card-title fs-6 text-white">Needs Budget</div>
+                <h5 class="mb-1 text-white">Rs {{ needs_spent_float|round(2) }} / Rs {{ needs_limit_float|round(2) }}</h5>
+                <div class="progress mb-2" style="height: 10px; background-color: white;">
+                    <div class="progress-bar" style="width: {{ (needs_spent_float/needs_limit_float*100) if needs_limit_float > 0 else 0 }}%; background-color: #FF7FEA;"></div>
+                </div>
+                <small class="text-white">
+                    {% if needs_limit_float == 0 %}
+                        Add monthly income to set budget
+                    {% elif needs_remaining|default(0)|float > 0 %}
+                        Rs {{ needs_remaining|default(0)|float|round(2) }} remaining
+                    {% else %}
+                        Rs {{ (needs_remaining|default(0)|float * -1)|round(2) }} over budget!
+                    {% endif %}
+                </small>
+            </div>
+
+            <!-- Wants Budget Card -  -->
+            <div class="card p-2 text-center" style="background: 
+                {% set wants_limit_float = wants_limit|default(0)|float %}
+                {% set wants_spent_float = wants_spent|default(0)|float %}
+                {% if wants_limit_float == 0 %} #6c757d
+                {% elif wants_spent_float > wants_limit_float %} #dc3545
+                {% elif wants_limit_float > 0 and (wants_spent_float/wants_limit_float*100) > 80 %}#ffc107
+                {% else %} #17a2b8
+                {% endif %};">
+                <div class="card-title fs-6 text-white">Wants Budget</div>
+                <h5 class="mb-1 text-white">Rs {{ wants_spent_float|round(2) }} / Rs {{ wants_limit_float|round(2) }}</h5>
+                <div class="progress mb-2" style="height: 10px; background-color:white">
+                    <div class="progress-bar" style="width: {{ (wants_spent_float/wants_limit_float*100) if wants_limit_float > 0 else 0 }}%; background-color: #7FFFD4;"></div>
+                </div>
+                <small class="text-white">
+                    {% if wants_limit_float == 0 %}
+                        Add monthly income to set budget
+                    {% elif wants_remaining|default(0)|float > 0 %}
+                        Rs {{ wants_remaining|default(0)|float|round(2) }} remaining
+                    {% else %}
+                        Rs {{ (wants_remaining|default(0)|float * -1)|round(2) }} over budget!
+                    {% endif %}
+                </small>
+            </div>
+
+            <!-- Savings Progress Card -  -->
+            <div class="card p-2 bg-success text-white text-center">
+                <div class="card-title fs-6">Savings Progress</div>
+                {% set savings_target_float = savings_target|default(0)|float %}
+                {% set savings_made_float = savings_made|default(0)|float %}
+                <h5 class="mb-1">Rs {{ savings_made_float|round(2) }} / Rs {{ savings_target_float|round(2) }}</h5>
+                <div class="progress mb-2" style="height: 10px; background-color: white;">
+                    <div class="progress-bar" style="width: {{ (savings_made_float/savings_target_float*100) if savings_target_float > 0 else 0 }}%;   background-color: #40FF40;"></div>
+                </div>
+                <small>
+                    {% if savings_target_float == 0 %}
+                        Add monthly income to set target
+                    {% elif savings_remaining|default(0)|float > 0 %}
+                        Rs {{ savings_remaining|default(0)|float|round(2) }} to reach goal
+                    {% else %}
+                        Goal exceeded by Rs {{ (savings_remaining|default(0)|float * -1)|round(2) }}!
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Third Row: Monthly Financial Overview -->
+<div class="row g-5 mb-3">
+    <div class="col-12 col-md-8 col-lg-6 mx-auto">
+        <div class="card p-2">
+            <div class="card-title text-center fs-6">Monthly Financial Overview</div>
+            <canvas id="financialBarChart" style="max-height: 300px;"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Budget Status Alerts -  -->
+{% set needs_limit_float = needs_limit|default(0)|float %}
+{% set needs_spent_float = needs_spent|default(0)|float %}
+{% set wants_limit_float = wants_limit|default(0)|float %}
+{% set wants_spent_float = wants_spent|default(0)|float %}
+
+{% if needs_spent_float > needs_limit_float or wants_spent_float > wants_limit_float %}
+<div class="row mb-3">
+    <div class="col-12 text-center">
+        <div class="alert alert-danger ">
+            <h6>⚠️ Budget Alert! ⚠️</h6>
+            {% if needs_spent_float > needs_limit_float %}
+                <p>• You've exceeded your Needs budget by Rs {{ (needs_spent_float - needs_limit_float)|round(2) }}</p>
+            {% endif %}
+            {% if wants_spent_float > wants_limit_float %}
+                <p>• You've exceeded your Wants budget by Rs {{ (wants_spent_float - wants_limit_float)|round(2) }}</p>
+            {% endif %}
+            <small>Consider reducing expenses or increasing income for next month.</small>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Updated chart with monthly data 
+    const progressChart = document.getElementById('budgetProgressChart').getContext('2d');
+    new Chart(progressChart, {
+        type: 'doughnut',
+        data: {
+            labels: ['Needs Spent', 'Wants Spent', 'Savings Made', 'Remaining'],
+            datasets: [{
+                data: [
+                    {{ needs_spent|default(0)|float }},
+                    {{ wants_spent|default(0)|float }},
+                    {{ savings_made|default(0)|float }},
+                    {{ (monthly_income|default(0)|float - needs_spent|default(0)|float - wants_spent|default(0)|float - savings_made|default(0)|float)|round(2) }}
+                ],
+                backgroundColor: [' #a084e8', ' #4056A1', ' #28a745', ' #ffff00']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { font: { size: 12 } }
                 }
-            });
-
-            const toggle2faSwitch = document.getElementById('toggle-2fa-switch');
-            if (toggle2faSwitch) {
-                toggle2faSwitch.addEventListener('change', function(e) {
-                    const userId = this.getAttribute('data-user-id');
-                    const isEnabled = this.checked;
-                    fetch(`/toggle_otp/${userId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': '{{ form.csrf_token._value() if form else "" }}'
-                        },
-                        body: JSON.stringify({ use_otp: isEnabled })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const flashForm = document.createElement('form');
-                            flashForm.method = 'POST';
-                            flashForm.action = '{{ url_for("dashboard", user_id=user.id) if user else url_for("login") }}';
-                            const flashInput = document.createElement('input');
-                            flashInput.type = 'hidden';
-                            flashInput.name = 'flash_message';
-                            flashInput.value = `2FA has been ${isEnabled ? 'enabled' : 'disabled'} successfully!`;
-                            flashForm.appendChild(flashInput);
-                            document.body.appendChild(flashForm);
-                            flashForm.submit();
-                        } else {
-                            alert(data.message || 'Error toggling 2FA');
-                            this.checked = !isEnabled;
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error toggling 2FA');
-                        this.checked = !isEnabled;
-                    });
-                });
             }
+        }
+    });
 
-            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-            [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-        });
-    </script>
-    {% block scripts %}
-    {% endblock %}
-</body>
-</html>
+    // Monthly comparison bar chart - 
+    const barchart = document.getElementById('financialBarChart').getContext('2d');
+    new Chart(barchart, {
+        type: 'bar',
+        data: {
+            labels: ['Income', 'Needs Limit', 'Needs Spent', 'Wants Limit', 'Wants Spent', 'Savings Target', 'Savings Made'],
+            datasets: [{
+                label: 'Amount (Rs)',
+                data: [
+                    {{ monthly_income|default(0)|float }},
+                    {{ needs_limit|default(0)|float }},
+                    {{ needs_spent|default(0)|float }},
+                    {{ wants_limit|default(0)|float }},
+                    {{ wants_spent|default(0)|float }},
+                    {{ savings_target|default(0)|float }},
+                    {{ savings_made|default(0)|float }}
+                ],
+                backgroundColor: [
+                    ' #28a745', // Income - green
+                    ' #a084e8', // Needs limit - purple
+                    {% if needs_spent|default(0)|float > needs_limit|default(0)|float %}' #dc3545'{% else %}' #a084e8'{% endif %}, // Needs spent
+                    ' #4056A1', // Wants limit - blue
+                    {% if wants_spent|default(0)|float > wants_limit|default(0)|float %}' #dc3545'{% else %}' #4056A1'{% endif %}, // Wants spent
+                    ' #17a2b8', // Savings target - teal
+                    ' #28a745'  // Savings made - green
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'Amount (Rs)' }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+</script>
+{% endblock %}
