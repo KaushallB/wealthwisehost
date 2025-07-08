@@ -54,15 +54,18 @@
             box-shadow: 0 0 10px rgba(0,0,0,0.5);
             z-index: 1000;
             font-size: 0.9em;
+            top: 100%; /* Position below the input */
+            left: 0;
         }
         .checklist-item {
             margin: 5px 0;
         }
         .checklist-item.valid {
-            color:rgb(186, 240, 8); 
+            color: rgb(186, 240, 8); 
         }
         .checklist-item.invalid {
             color: #e74c3c; 
+        }
         .form-outline:hover .checklist-box, .form-outline:focus-within .checklist-box {
             display: block;
         }
@@ -182,10 +185,10 @@
                                             </div>
                     <div class="checklist-box" id="password-checklist-box">
                         <div class="checklist-item" id="length-check">At least 8 characters</div>
-                        <div class="checklist-item" id="uppercase-check">Atleast one uppercase letter</div>
-                        <div class="checklist-item" id="lowercase-check">Atleast one lowercase letter</div>
-                        <div class="checklist-item" id="number-check">Atleast one number</div>
-                        <div class="checklist-item" id="special-check">Atleast one special character (e.g., @$!%*?&)</div>
+                        <div class="checklist-item" id="uppercase-check">At least one uppercase letter</div>
+                        <div class="checklist-item" id="lowercase-check">At least one lowercase letter</div>
+                        <div class="checklist-item" id="number-check">At least one number</div>
+                        <div class="checklist-item" id="special-check">At least one special character (e.g., @$!%*?&)</div>
                     </div>
                                         </div>
                                         <div data-mdb-input-init class="form-outline mb-4 position-relative">
