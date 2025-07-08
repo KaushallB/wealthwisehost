@@ -139,8 +139,11 @@
             #sidebar {
                 transform: translateX(-100%); /* Ensure sidebar is hidden by default on mobile */
             }
+            #sidebar.active {
+                transform: translateX(0); /* Fix sidebar to stay visible when active */
+            }
             #sidebar.active ~ .main {
-                margin-left: 0;
+                margin-left: 250px; /* Adjust main content margin when sidebar is active */
             }
             .main {
                 margin-left: 0;
@@ -283,16 +286,7 @@
             });
 
             // Ensure sidebar is hidden by default on mobile and only shown on desktop
-            if (window.innerWidth < 768) {
-                sidebar.classList.remove('active');
-                main.classList.remove('active');
-            } else {
-                sidebar.classList.add('active');
-                main.classList.add('active');
-            }
-
-            // Adjust sidebar state on resize
-            window.addEventListener('resize', function() {
+            function setSidebarState() {
                 if (window.innerWidth < 768) {
                     sidebar.classList.remove('active');
                     main.classList.remove('active');
@@ -300,7 +294,11 @@
                     sidebar.classList.add('active');
                     main.classList.add('active');
                 }
-            });
+            }
+
+            // Set initial state and handle resize
+            setSidebarState();
+            window.addEventListener('resize', setSidebarState);
 
             const toggle2faSwitch = document.getElementById('toggle-2fa-switch');
             if (toggle2faSwitch) {
