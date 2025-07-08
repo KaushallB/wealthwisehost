@@ -60,7 +60,7 @@
             border-radius: 50%;
         }
         input:checked + .slider {
-            background-color: #28a745;
+            background-color: #28a745; /* Green for enabled */
         }
         input:focus + .slider {
             box-shadow: 0 0 1px #28a745;
@@ -84,62 +84,6 @@
         }
         .dropdown-item label {
             width: 100%;
-        }
-        #sidebar {
-            position: fixed;
-            top: 0;
-            bottom: 0;
-            left: 0;
-            width: 250px;
-            transition: transform 0.3s ease-in-out;
-            transform: translateX(-100%);
-            z-index: 1000;
-        }
-        #sidebar.active {
-            transform: translateX(0);
-        }
-        .main {
-            margin-left: 0;
-            transition: margin-left 0.3s ease-in-out;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        #sidebar.active ~ .main {
-            margin-left: 250px;
-        }
-        #sidebar-toggle {
-            display: block;
-            z-index: 1001;
-        }
-        .content {
-            width: 100%;
-            max-width: 1200px; 
-            margin: 0 auto;
-            padding: 0 15px;
-        }
-        @media (min-width: 768px) {
-            #sidebar {
-                transform: translateX(0);
-            }
-            #sidebar.active ~ .main {
-                margin-left: 0;
-            }
-            .main {
-                margin-left: 250px;
-            }
-            .content {
-                padding: 0 15px;
-            }
-        }
-        @media (max-width: 767px) {
-            .main {
-                margin-left: 0;
-            }
-            #sidebar.active ~ .main {
-                margin-left: 0;
-            }
         }
     </style>
 </head>
@@ -268,35 +212,6 @@
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.getElementById('sidebar-toggle');
-            const sidebar = document.getElementById('sidebar');
-            const main = document.querySelector('.main');
-
-            sidebarToggle.addEventListener('click', function() {
-                sidebar.classList.toggle('active');
-                main.classList.toggle('active');
-            });
-
-            // Ensure sidebar toggle works on all devices
-            if (window.innerWidth < 768) {
-                sidebar.classList.remove('active');
-                main.classList.remove('active');
-            } else {
-                sidebar.classList.add('active');
-                main.classList.add('active');
-            }
-
-            // Update sidebar state on resize
-            window.addEventListener('resize', function() {
-                if (window.innerWidth < 768) {
-                    sidebar.classList.remove('active');
-                    main.classList.remove('active');
-                } else {
-                    sidebar.classList.add('active');
-                    main.classList.add('active');
-                }
-            });
-
             const toggle2faSwitch = document.getElementById('toggle-2fa-switch');
             if (toggle2faSwitch) {
                 toggle2faSwitch.addEventListener('change', function(e) {
@@ -313,6 +228,7 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            // Instead of alert, trigger a flash message via a hidden form submit
                             const flashForm = document.createElement('form');
                             flashForm.method = 'POST';
                             flashForm.action = '{{ url_for("dashboard", user_id=user.id) if user else url_for("login") }}';
@@ -325,21 +241,22 @@
                             flashForm.submit();
                         } else {
                             alert(data.message || 'Error toggling 2FA');
-                            this.checked = !isEnabled;
+                            this.checked = !isEnabled; // Revert if failed
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
                         alert('Error toggling 2FA');
-                        this.checked = !isEnabled;
+                        this.checked = !isEnabled; // Revert if failed
                     });
                 });
             }
 
+            // Initialize tooltips
             const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
             [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
         });
-    </script>
+</script>
     {% block scripts %}
     {% endblock %}
 </body>
