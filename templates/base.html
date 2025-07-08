@@ -85,7 +85,7 @@
         .dropdown-item label {
             width: 100%;
         }
-        /* New styles to handle sidebar collapse on small screens */
+        /*  style to handle sidebar collapse on all devices */
         #sidebar {
             position: fixed;
             top: 0;
@@ -99,24 +99,27 @@
         #sidebar.active {
             transform: translateX(0);
         }
-        @media (min-width: 768px) {
-            #sidebar {
-                transform: translateX(0);
-            }
-        }
         .main {
             margin-left: 0;
             transition: margin-left 0.3s ease-in-out;
+            min-height: 100vh;
         }
         #sidebar.active ~ .main {
             margin-left: 250px;
         }
         #sidebar-toggle {
             display: block;
+            z-index: 1001;
         }
         @media (min-width: 768px) {
-            #sidebar-toggle {
-                display: none;
+            #sidebar {
+                transform: translateX(0);
+            }
+            #sidebar.active ~ .main {
+                margin-left: 0;
+            }
+            .main {
+                margin-left: 250px;
             }
         }
     </style>
@@ -255,13 +258,16 @@
                 main.classList.toggle('active');
             });
 
-            // Collapse sidebar on page load for screens smaller than 768px
+            // Ensure sidebar toggle works on all devices
             if (window.innerWidth < 768) {
                 sidebar.classList.remove('active');
                 main.classList.remove('active');
+            } else {
+                sidebar.classList.add('active');
+                main.classList.add('active');
             }
 
-            // Collapse sidebar when window is resized below 768px
+            // Update sidebar state on resize
             window.addEventListener('resize', function() {
                 if (window.innerWidth < 768) {
                     sidebar.classList.remove('active');
