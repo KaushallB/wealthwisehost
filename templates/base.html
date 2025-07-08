@@ -85,7 +85,6 @@
         .dropdown-item label {
             width: 100%;
         }
-        /*  style to handle sidebar collapse on all devices */
         #sidebar {
             position: fixed;
             top: 0;
@@ -103,6 +102,9 @@
             margin-left: 0;
             transition: margin-left 0.3s ease-in-out;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         #sidebar.active ~ .main {
             margin-left: 250px;
@@ -110,6 +112,12 @@
         #sidebar-toggle {
             display: block;
             z-index: 1001;
+        }
+        .content {
+            width: 100%;
+            max-width: 1200px; 
+            margin: 0 auto;
+            padding: 0 15px;
         }
         @media (min-width: 768px) {
             #sidebar {
@@ -120,6 +128,17 @@
             }
             .main {
                 margin-left: 250px;
+            }
+            .content {
+                padding: 0 15px;
+            }
+        }
+        @media (max-width: 767px) {
+            .main {
+                margin-left: 0;
+            }
+            #sidebar.active ~ .main {
+                margin-left: 0;
             }
         }
     </style>
