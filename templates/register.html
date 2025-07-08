@@ -44,36 +44,27 @@
             color: #ffc107 !important;
             text-decoration: underline;
         }
-        .validation-info {
-            background-color: #f8f9fa;
+        .checklist-box {
+            display: none;
+            position: absolute;
+            background-color: #2c3e50; 
+            color: #fff;
+            padding: 10px;
             border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 20px;
-            color: #333;
-        }
-        .validation-info ul {
-            margin-bottom: 0;
-            padding-left: 20px;
-        }
-        .validation-info li {
-            margin-bottom: 5px;
-        }
-        .checklist {
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            z-index: 1000;
             font-size: 0.9em;
-            color: #333;
-            margin-top: 5px;
         }
-        .checklist .valid {
-            color: green;
+        .checklist-item {
+            margin: 5px 0;
         }
-        .checklist .invalid {
-            color: white;
+        .checklist-item.valid {
+            color:rgb(186, 240, 8); 
         }
-        .form-label {
-            text-align: center;
+        .checklist-item.invalid {
+            color: #e74c3c; 
+        .form-outline:hover .checklist-box, .form-outline:focus-within .checklist-box {
             display: block;
-            width: 100%;
-            margin-bottom: 0.5rem;
         }
     </style>
 </head>
@@ -109,7 +100,7 @@
 
                                     <form method="POST" action="{{ url_for('registration') }}">
                                         {{ form.hidden_tag() }}
-                                        <div data-mdb-input-init class="form-outline mb-4">
+                                        <div data-mdb-input-init class="form-outline mb-4 position-relative">
                                             {{ form.full_name.label(class="form-label text-white") }}
                                             <div class="input-group mb-4">
                                                 <span class="input-group-text" style="background-color: #D79922; border-color: #D79922;">
@@ -123,11 +114,11 @@
                                                     <div class="text-danger">{{ error }}</div>
                                                 {% endfor %}
                                             </div>
-                                            <div class="checklist" id="name-checklist">
-                                                <div id="name-format-check" class="invalid">Only letters and spaces</div>
+                                            <div class="checklist-box" id="name-checklist-box">
+                                                <div class="checklist-item" id="name-format-check">Only letters and spaces</div>
                                             </div>
                                         </div>
-                                        <div data-mdb-input-init class="form-outline mb-4">
+                                        <div data-mdb-input-init class="form-outline mb-4 position-relative">
                                             {{ form.email.label(class="form-label text-white") }}
                                             <div class="input-group mb-4">
                                                 <span class="input-group-text" style="background-color: #D79922; border-color: #D79922;">
@@ -140,11 +131,11 @@
                                                     <div class="text-danger">{{ error }}</div>
                                                 {% endfor %}
                                             </div>
-                                            <div class="checklist" id="email-checklist">
-                                                <div id="email-format-check" class="invalid">Valid email format (e.g., user@example.com)</div>
+                                            <div class="checklist-box" id="email-checklist-box">
+                                                <div class="checklist-item" id="email-format-check">Valid email format (e.g., user@example.com)</div>
                                             </div>
                                         </div>
-                                        <div data-mdb-input-init class="form-outline mb-4">
+                                        <div data-mdb-input-init class="form-outline mb-4 position-relative">
                                             {{ form.phone_num.label(class="form-label text-white") }}
                                             <div class="input-group mb-4">
                                                 <span class="input-group-text" style="background-color: #D79922; border-color: #D79922;">
@@ -153,13 +144,13 @@
                                                         <path d="M8 14a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
                                                     </svg>
                                                 </span>
-                                                {{ form.phone_num(class="form-control form-control-lg", placeholder="+977 9805......", id="phone_num") }}
+                                                {{ form.phone_num(class="form-control form-control-lg", placeholder="+977 1234567890", id="phone_num") }}
                                                 {% for error in form.phone_num.errors %}
                                                     <div class="text-danger">{{ error }}</div>
                                                 {% endfor %}
                                             </div>
-                                            <div class="checklist" id="phone-checklist">
-                                                <div id="phone-format-check" class="invalid">10 digits, Country Code is optional</div>
+                                            <div class="checklist-box" id="phone-checklist-box">
+                                                <div class="checklist-item" id="phone-format-check">10 digits (optional +977)</div>
                                             </div>
                                         </div>
                                         <div data-mdb-input-init class="form-outline mb-4">
@@ -170,13 +161,13 @@
                                                         <path d="M8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10m0-7a3 3 0 1 1 0-6 3 3 0 0 1 0 6"/>
                                                     </svg>
                                                 </span>
-                                                {{ form.address(class="form-control form-control-lg", placeholder="Eg.Baneshwor") }}
+                                                {{ form.address(class="form-control form-control-lg", placeholder="Eg.Hattiban") }}
                                                 {% for error in form.address.errors %}
                                                     <div class="text-danger">{{ error }}</div>
                                                 {% endfor %}
                                             </div>
                                         </div>
-                                        <div data-mdb-input-init class="form-outline mb-4">
+                                        <div data-mdb-input-init class="form-outline mb-4 position-relative">
                                             {{ form.password.label(class="form-label text-white") }}
                                             <div class="input-group mb-4">
                                                 <span class="input-group-text" style="background-color: #D79922; border-color: #D79922;">
@@ -189,15 +180,15 @@
                                                     <div class="text-danger">{{ error }}</div>
                                                 {% endfor %}
                                             </div>
-                                            <div class="checklist" id="password-checklist">
-                                                <div id="length-check" class="invalid">At least 8 characters</div>
-                                                <div id="uppercase-check" class="invalid">At least one uppercase letter</div>
-                                                <div id="lowercase-check" class="invalid">At least one lowercase letter</div>
-                                                <div id="number-check" class="invalid">At least one number</div>
-                                                <div id="special-check" class="invalid">At least one special character (e.g., @$!%*?&)</div>
-                                            </div>
+                    <div class="checklist-box" id="password-checklist-box">
+                        <div class="checklist-item" id="length-check">At least 8 characters</div>
+                        <div class="checklist-item" id="uppercase-check">Atleast one uppercase letter</div>
+                        <div class="checklist-item" id="lowercase-check">Atleast one lowercase letter</div>
+                        <div class="checklist-item" id="number-check">Atleast one number</div>
+                        <div class="checklist-item" id="special-check">Atleast one special character (e.g., @$!%*?&)</div>
+                    </div>
                                         </div>
-                                        <div data-mdb-input-init class="form-outline mb-4">
+                                        <div data-mdb-input-init class="form-outline mb-4 position-relative">
                                             {{ form.confirm_pw.label(class="form-label text-white") }}
                                             <div class="input-group mb-4">
                                                 <span class="input-group-text" style="background-color: #D79922; border-color: #D79922;">
@@ -210,8 +201,8 @@
                                                     <div class="text-danger">{{ error }}</div>
                                                 {% endfor %}
                                             </div>
-                                            <div class="checklist" id="confirm-pw-checklist">
-                                                <div id="match-check" class="invalid">Must match password</div>
+                                            <div class="checklist-box" id="confirm-pw-checklist-box">
+                                                <div class="checklist-item" id="match-check">Must match password</div>
                                             </div>
                                         </div>
                                         <div class="submit pt-1 mb-4">
@@ -271,7 +262,7 @@
         const phoneFormatCheck = document.getElementById("phone-format-check");
         phoneInput.addEventListener("input", function() {
             const phone = this.value.replace(/\s/g, '');
-            if (/^\+?977?\d{10}$/.test(phone)) {
+            if (/^\+?977?\d{10}$/.test(phone) || /^\d{10}$/.test(phone)) {
                 phoneFormatCheck.classList.remove("invalid");
                 phoneFormatCheck.classList.add("valid");
             } else {
