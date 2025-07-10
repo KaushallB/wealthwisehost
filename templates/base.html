@@ -85,6 +85,23 @@
         .dropdown-item label {
             width: 100%;
         }
+        #sidebar {
+            transition: margin-left 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            #sidebar {
+                margin-left: -250px; 
+                position: fixed;
+                height: 100%;
+                z-index: 1030;
+            }
+
+        .main {
+            margin-left: 0 !important; 
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -211,6 +228,25 @@
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Auto-collapse sidebar if screen width is less than 768px (mobile)
+            if (window.innerWidth < 768) {
+                document.body.classList.add("collapsed"); // or add your class to hide sidebar
+                document.getElementById('sidebar').style.marginLeft = "-250px"; // Adjust width accordingly
+            }
+
+            // Toggle button to show/hide sidebar manually
+            const toggleBtn = document.getElementById("sidebar-toggle");
+            toggleBtn.addEventListener("click", function () {
+                const sidebar = document.getElementById("sidebar");
+                if (sidebar.style.marginLeft === "0px" || sidebar.style.marginLeft === "") {
+                    sidebar.style.marginLeft = "-250px"; // Collapse
+                } else {
+                    sidebar.style.marginLeft = "0px"; // Show
+                }
+            });
+        });
+
         document.addEventListener('DOMContentLoaded', function() {
             const toggle2faSwitch = document.getElementById('toggle-2fa-switch');
             if (toggle2faSwitch) {
