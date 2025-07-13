@@ -228,70 +228,59 @@
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
+        document.addEventListener('DOMContentLoaded', function() {
             // Auto-collapse sidebar if screen width is less than 768px (mobile)
             if (window.innerWidth < 768) {
-                document.body.classList.add("collapsed"); // or add your class to hide sidebar
-                document.getElementById('sidebar').style.marginLeft = "-250px"; // Adjust width accordingly
+                document.body.classList.add('collapsed');
+                document.getElementById('sidebar').style.marginLeft = '-250px';
             }
 
             // Toggle button to show/hide sidebar manually
-            const toggleBtn = document.getElementById("sidebar-toggle");
-            toggleBtn.addEventListener("click", function () {
-                const sidebar = document.getElementById("sidebar");
-                if (sidebar.style.marginLeft === "0px" || sidebar.style.marginLeft === "") {
-                    sidebar.style.marginLeft = "-250px"; // Collapse
+            const toggleBtn = document.getElementById('sidebar-toggle');
+            toggleBtn.addEventListener('click', function() {
+                const sidebar = document.getElementById('sidebar');
+                if (sidebar.style.marginLeft === '0px' || sidebar.style.marginLeft === '') {
+                    sidebar.style.marginLeft = '-250px'; // Collapse
                 } else {
-                    sidebar.style.marginLeft = "0px"; // Show
+                    sidebar.style.marginLeft = '0px'; // Show
                 }
             });
-        });
 
-        document.addEventListener('DOMContentLoaded', function() {
-        const toggle2faSwitch = document.getElementById('toggle-2fa-switch');
-        if (toggle2faSwitch) {
-            toggle2faSwitch.addEventListener('change', function(e) {
-                const userId = this.getAttribute('data-user-id');
-                const isEnabled = this.checked;
-                const csrfToken = '{{ form.csrf_token._value() if form else "" }}'; // Ensure CSRF token is available
+            // 2FA Toggle Logic
+            const toggle2faSwitch = document.getElementById('toggle-2fa-switch');
+            if (toggle2faSwitch) {
+                toggle2faSwitch.addEventListener('change', function(e) {
+                    const userId = this.getAttribute('data-user-id');
+                    const isEnabled = this.checked;
+                    const csrfToken = '{{ session["_csrf_token"]|default(os.urandom(16).hex())|safe }}'; // Fallback token
 
-                fetch(`/toggle_otp/${userId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-Token': csrfToken
-                    },
-                    body: JSON.stringify({ use_otp: isEnabled })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Display flash message inline
-                        const alertDiv = document.createElement('div');
-                        alertDiv.className = `alert alert-${data.message.includes('successfully') ? 'success' : 'danger'} alert-dismissible fade show`;
-                        alertDiv.role = 'alert';
-                        alertDiv.innerHTML = `${data.message} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`;
-                        const container = document.querySelector('.container');
-                        container.insertBefore(alertDiv, container.firstChild);
-                        // Revert checkbox if failed (though success case handled above)
-                        this.checked = data.use_otp;
-                    } else {
-                        alert(data.message || 'Error toggling 2FA');
-                        this.checked = !isEnabled; // Revert if failed
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error toggling 2FA');
-                    this.checked = !isEnabled; // Revert if failed
+                    fetch(`/toggle_otp/${userId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken
+                        },
+                        body: JSON.stringify({ use_otp: isEnabled })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        // Redirect to dashboard to show flash message
+                        window.location.href = `/dashboard/${userId}`;
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while toggling 2FA.');
+                        this.checked = !isEnabled; // Revert switch
+                    });
                 });
-            });
-        }
+            }
 
-        // Initialize tooltips
-        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-        [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-    });
+            // Initialize tooltips
+            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+        });
 </script>
     {% block scripts %}
     {% endblock %}

@@ -1304,16 +1304,18 @@ def view_reports(user_id):
 @app.route('/toggle_otp/<int:user_id>', methods=['POST'])
 def toggle_otp(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
-        return jsonify({'success': False, 'message': 'Unauthorized access.'}), 403
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('dashboard', user_id=user_id))
     
-    # Ensuring CSRF token is present in session
+    # Regenerate CSRF token on each request
     if '_csrf_token' not in session:
         session['_csrf_token'] = os.urandom(16).hex()
     
-    # Getting CSRF token from request
+    # Get CSRF token from request
     csrf_token = request.headers.get('X-CSRF-Token') or request.form.get('csrf_token')
     if not csrf_token or csrf_token != session.get('_csrf_token'):
-        return jsonify({'success': False, 'message': 'Invalid CSRF token.'}), 400
+        flash('Invalid CSRF token.', 'danger')
+        return redirect(url_for('dashboard', user_id=user_id))
     
     try:
         conn = get_db_connection()
@@ -1321,33 +1323,28 @@ def toggle_otp(user_id):
         cursor.execute('SELECT use_otp FROM users WHERE id = %s', (user_id,))
         user = cursor.fetchone()
         if not user:
+            flash('User not found.', 'danger')
             cursor.close()
             conn.close()
-            return jsonify({'success': False, 'message': 'User not found.'}), 404
+            return redirect(url_for('dashboard', user_id=user_id))
         
-        # Getting the new OTP status from the request body
         data = request.get_json()
-        new_otp_status = data.get('use_otp', not user['use_otp'])  # Default to toggling if not provided
+        new_otp_status = data.get('use_otp', not user['use_otp'])
         cursor.execute('UPDATE users SET use_otp = %s WHERE id = %s', (new_otp_status, user_id))
         conn.commit()
         
-        # Updating session to reflect the new state
         session.modified = True
-        
-        # Preparing flash message in the response
         status_text = 'enabled' if new_otp_status else 'disabled'
-        return jsonify({
-            'success': True,
-            'use_otp': new_otp_status,
-            'message': f'2FA has been {status_text} successfully!'
-        })
+        flash(f'2FA has been {status_text} successfully!', 'success')
+        return redirect(url_for('dashboard', user_id=user_id))
     
     except Exception as e:
         logging.error(f"Toggle OTP error: {str(e)}")
+        flash(f'Error: {str(e)}', 'danger')
         if 'conn' in locals():
             conn.rollback()
             conn.close()
-        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
+        return redirect(url_for('dashboard', user_id=user_id))
     
     finally:
         if 'conn' in locals():
