@@ -453,13 +453,14 @@ def logout():
 #DASHBOARD
 @app.route('/dashboard/<int:user_id>')
 def dashboard(user_id):
+    logging.info(f"Dashboard access for user_id {user_id}, session: {dict(session)}")
     if not is_logged_in() or session['user_id'] != user_id:
         return redirect(url_for('login'))
     
     if request.args.get('flash_message'):
         flash(request.args.get('flash_message'), 'success')
     
-    form = LoginForm()  # Add for CSRF token
+    form = LoginForm()
     conn = None
     cursor = None
     
@@ -547,7 +548,7 @@ def dashboard(user_id):
                             form=form)
                             
     except Exception as e:
-        logging.error(f"Dashboard error: {str(e)}", exc_info=True)
+        logging.error(f"Dashboard error for user {user_id}: {str(e)}", exc_info=True)
         flash('An error occurred while loading the dashboard', 'danger')
         return redirect(url_for('login'))
         
@@ -556,7 +557,7 @@ def dashboard(user_id):
             cursor.close()
         if conn:
             conn.close()
-
+            
 #CHATBOT
 @app.route('/chatbot/<int:user_id>', methods=['GET', 'POST'])
 def chatbot(user_id):
