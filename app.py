@@ -381,7 +381,7 @@ def registration():
     if form.validate_on_submit():
         full_name = form.full_name.data
         email = form.email.data
-        phone_num = form.phone_num.data
+        phone_num = form.phone_num.data  
         address = form.address.data
         pw = form.password.data
         
@@ -392,12 +392,6 @@ def registration():
         try:
             conn = get_db_connection()
             cursor = conn.cursor(cursor_factory=DictCursor)
-            phone_num = re.sub(r'^\+977', '', phone_num).strip()
-            if not re.match(r'^\d{10}$', phone_num):
-                flash('Phone number must be 10 digits (with or without +977).', 'danger')
-                cursor.close()
-                conn.close()
-                return redirect(url_for('registration'))
             cursor.execute('SELECT * FROM users WHERE phone_number=%s OR email=%s', (phone_num, email))
             account = cursor.fetchone()
             if account:
@@ -427,6 +421,17 @@ def registration():
                 conn.close()
                 flash('You Have Successfully Registered!', 'success')
                 return redirect(url_for('login'))
+        except psycopg2.IntegrityError as e:
+            conn.rollback()
+            if 'unique_phone_number' in str(e):
+                flash('Phone Number Already Registered! Please use a new number.', 'danger')
+            elif 'unique_email' in str(e):
+                flash('Email Already Registered! Please use a new email.', 'danger')
+            else:
+                flash(f'Registration error: {str(e)}', 'danger')
+            cursor.close()
+            conn.close()
+            return redirect(url_for('registration'))
         except Exception as e:
             logging.error(f"Registration error: {str(e)}")
             flash(f'Error occurred: {str(e)}', 'danger')
