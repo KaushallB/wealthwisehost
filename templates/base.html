@@ -248,50 +248,50 @@
         });
 
         document.addEventListener('DOMContentLoaded', function() {
-            const toggle2faSwitch = document.getElementById('toggle-2fa-switch');
-            if (toggle2faSwitch) {
-                toggle2faSwitch.addEventListener('change', function(e) {
-                    const userId = this.getAttribute('data-user-id');
-                    const isEnabled = this.checked;
-                    fetch(`/toggle_otp/${userId}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-Token': '{{ form.csrf_token._value() if form else "" }}'
-                        },
-                        body: JSON.stringify({ use_otp: isEnabled })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Instead of alert, trigger a flash message via a hidden form submit
-                            const flashForm = document.createElement('form');
-                            flashForm.method = 'POST';
-                            flashForm.action = '{{ url_for("dashboard", user_id=user.id) if user else url_for("login") }}';
-                            const flashInput = document.createElement('input');
-                            flashInput.type = 'hidden';
-                            flashInput.name = 'flash_message';
-                            flashInput.value = `2FA has been ${isEnabled ? 'enabled' : 'disabled'} successfully!`;
-                            flashForm.appendChild(flashInput);
-                            document.body.appendChild(flashForm);
-                            flashForm.submit();
-                        } else {
-                            alert(data.message || 'Error toggling 2FA');
-                            this.checked = !isEnabled; // Revert if failed
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error toggling 2FA');
-                        this.checked = !isEnabled; // Revert if failed
-                    });
-                });
-            }
+        const toggle2faSwitch = document.getElementById('toggle-2fa-switch');
+        if (toggle2faSwitch) {
+            toggle2faSwitch.addEventListener('change', function(e) {
+                const userId = this.getAttribute('data-user-id');
+                const isEnabled = this.checked;
+                const csrfToken = '{{ form.csrf_token._value() if form else "" }}'; // Ensure CSRF token is available
 
-            // Initialize tooltips
-            const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-            [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
-        });
+                fetch(`/toggle_otp/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                    },
+                    body: JSON.stringify({ use_otp: isEnabled })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Display flash message inline
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = `alert alert-${data.message.includes('successfully') ? 'success' : 'danger'} alert-dismissible fade show`;
+                        alertDiv.role = 'alert';
+                        alertDiv.innerHTML = `${data.message} <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>`;
+                        const container = document.querySelector('.container');
+                        container.insertBefore(alertDiv, container.firstChild);
+                        // Revert checkbox if failed (though success case handled above)
+                        this.checked = data.use_otp;
+                    } else {
+                        alert(data.message || 'Error toggling 2FA');
+                        this.checked = !isEnabled; // Revert if failed
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error toggling 2FA');
+                    this.checked = !isEnabled; // Revert if failed
+                });
+            });
+        }
+
+        // Initialize tooltips
+        const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+    });
 </script>
     {% block scripts %}
     {% endblock %}
