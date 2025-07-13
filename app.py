@@ -261,8 +261,10 @@ def verify_otp():
         session['otp_data'] = otp_data
         if user_otp == otp_data['otp']:
             session['user_id'] = otp_data['user_id']
+            session.permanent = True 
             session.pop('otp_data', None)
             flash('Login Successful', 'success')
+            logging.info(f"User {otp_data['user_id']} logged in, session: {dict(session)}")
             return redirect(url_for('dashboard', user_id=otp_data['user_id']))
         else:
             if otp_data['attempts'] >= 5:
