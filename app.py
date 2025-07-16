@@ -452,17 +452,17 @@ def logout():
 #DASHBOARD
 @app.route('/dashboard/<int:user_id>')
 def dashboard(user_id):
-    if not is_logged_in() or session['user_id'] != user_id:
+    if not is_logged_in() or session.get('user_id') != user_id:
+        flash('Session mismatch or not logged in.', 'danger')
         return redirect(url_for('login'))
-       
-    # Check for pending OTP verification
+    
     if 'otp_data' in session:
         return redirect(url_for('verify_otp'))
     
     if request.args.get('flash_message'):
         flash(request.args.get('flash_message'), 'success')
     
-    form = LoginForm()  # Add for CSRF token
+    form = LoginForm()
     conn = None
     cursor = None
     
@@ -470,15 +470,17 @@ def dashboard(user_id):
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=DictCursor)
         
-        # Get current month/year in Nepal timezone
-        current_time = datetime.now(nepal_tz)
-        current_month = current_time.month
-        current_year = current_time.year
+        # Validate user exists
+        cursor.execute("SELECT id, full_name, use_otp FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        if not user:
+            flash('User not found. Please re-register or contact support.', 'danger')
+            session.clear()
+            return redirect(url_for('registration'))
         
         # Ensure budget allocation exists
         cursor.execute("SELECT * FROM budget_allocations WHERE user_id = %s", (user_id,))
         allocation = cursor.fetchone()
-        
         if not allocation:
             cursor.execute('''
                 INSERT INTO budget_allocations 
@@ -488,7 +490,10 @@ def dashboard(user_id):
             conn.commit()
             allocation = {'needs_percent': 50, 'wants_percent': 30, 'savings_percent': 20, 'total_budget': 0}
         
-        # Get monthly data with proper null handling
+        current_time = datetime.now(nepal_tz)
+        current_month = current_time.month
+        current_year = current_time.year
+        
         cursor.execute('''
             SELECT 
                 COALESCE(SUM(CASE WHEN transaction_type = 'income' AND category != 'savings' THEN amount ELSE 0 END), 0) as monthly_income,
@@ -508,28 +513,19 @@ def dashboard(user_id):
             'savings_made': 0
         }
         
-        # Calculate budget limits
-        monthly_income = Decimal(monthly_data['monthly_income'])
-        needs_spent = Decimal(monthly_data['needs_spent'])
-        wants_spent = Decimal(monthly_data['wants_spent'])
-        savings_made = Decimal(monthly_data['savings_made'])
+        monthly_income = Decimal(str(monthly_data['monthly_income']))
+        needs_spent = Decimal(str(monthly_data['needs_spent']))
+        wants_spent = Decimal(str(monthly_data['wants_spent']))
+        savings_made = Decimal(str(monthly_data['savings_made']))
         
-        needs_limit = (monthly_income * Decimal(allocation['needs_percent'])) / 100
-        wants_limit = (monthly_income * Decimal(allocation['wants_percent'])) / 100
-        savings_target = (monthly_income * Decimal(allocation['savings_percent'])) / 100
+        needs_limit = (monthly_income * Decimal(str(allocation['needs_percent']))) / 100
+        wants_limit = (monthly_income * Decimal(str(allocation['wants_percent']))) / 100
+        savings_target = (monthly_income * Decimal(str(allocation['savings_percent']))) / 100
         
-        needs_remaining = max(Decimal(0), needs_limit - needs_spent)
-        wants_remaining = max(Decimal(0), wants_limit - wants_spent)
-        savings_remaining = max(Decimal(0), savings_target - savings_made)
+        needs_remaining = max(Decimal('0'), needs_limit - needs_spent)
+        wants_remaining = max(Decimal('0'), wants_limit - wants_spent)
+        savings_remaining = max(Decimal('0'), savings_target - savings_made)
         
-        # Get user info including id
-        cursor.execute("SELECT id, full_name, use_otp FROM users WHERE id = %s", (user_id,))
-        user = cursor.fetchone()
-        
-        if not user:
-            flash('User not found', 'danger')
-            return redirect(url_for('login'))
-            
         return render_template('dashboard.html', 
                             user=user,
                             monthly_income=float(monthly_income),
@@ -550,8 +546,8 @@ def dashboard(user_id):
                             form=form)
                             
     except Exception as e:
-        logging.error(f"Dashboard error: {str(e)}", exc_info=True)
-        flash('An error occurred while loading the dashboard', 'danger')
+        logging.error(f"Dashboard error for user_id {user_id}: {str(e)}", exc_info=True)
+        flash('An error occurred while loading the dashboard. Please try again or re-register if the issue persists.', 'danger')
         return redirect(url_for('login'))
         
     finally:
