@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}WealthWise{% endblock %}</title>
     
+    <!-- CSRF Token for AJAX -->
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
     <!-- Open Graph Metadata -->
     <meta property="og:title" content="WealthWise - Finance Management System">
     <meta property="og:description" content="Smart finance management for students and everyone! Track expenses, manage income, get AI-powered advice, and visualize spending patterns with WealthWise.">
@@ -97,11 +100,10 @@
                 z-index: 1030;
             }
 
-        .main {
-            margin-left: 0 !important; 
+            .main {
+                margin-left: 0 !important; 
             }
         }
-
     </style>
 </head>
 <body>
@@ -109,7 +111,7 @@
         <aside id="sidebar">
             <div class="h-100">
                 <div class="sidebar-logo">
-                    <a href="{{ url_for('dashboard', user_id=user.id) }}">
+                    <a href="{{ url_for('dashboard', user_id=user['id']) }}">
                         <img src="{{ url_for('static', filename='assets/logon.png') }}" alt="logo" class="w-75" style="border-radius: 1rem 0 0 1rem;" />
                     </a>   
                 </div>
@@ -139,7 +141,7 @@
                         </ul>
                     </li>
                     <li class="sidebar-item">
-                        <a href="{{ url_for('chatbot', user_id=user.id) }}" class="sidebar-link">
+                        <a href="{{ url_for('chatbot', user_id=user['id']) }}" class="sidebar-link">
                             <i class="bi bi-robot"></i>
                             Chatbot
                         </a>
@@ -252,7 +254,7 @@
                 toggle2faSwitch.addEventListener('change', function(e) {
                     const userId = this.getAttribute('data-user-id');
                     const isEnabled = this.checked;
-                    const csrfToken = '{{ session["_csrf_token"]|default(os.urandom(16).hex())|safe }}'; // Fallback token
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
                     fetch(`/toggle_otp/${userId}`, {
                         method: 'POST',
@@ -281,7 +283,7 @@
             const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
             [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
         });
-</script>
+    </script>
     {% block scripts %}
     {% endblock %}
 </body>
