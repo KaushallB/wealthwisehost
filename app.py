@@ -50,13 +50,18 @@ else:
     app.config['MAIL_DEFAULT_SENDER'] = 'noreply@wealthwise.com'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'WealthWise')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+if not app.config['SECRET_KEY']:
+    raise ValueError("SECRET_KEY must be set in environment variables")
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 app.config['TESTING'] = False
 app.config['MAIL_DEBUG'] = True
 app.config['MAIL_SUPPRESS_SEND'] = False
 app.config['MAIL_FAIL_SILENTLY'] = False
 app.config['WTF_CSRF_ENABLED'] = True
+app.config['DEBUG'] = False
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = True  # Requires HTTPS
 
 db = SQLAlchemy(app)
 enc = Bcrypt(app)
@@ -106,6 +111,8 @@ def is_real_email(email):
     
 @app.route('/debug_session')
 def debug_session():
+    if not app.config['DEBUG']:  # Only allow in debug mode
+        return jsonify({'error': 'Debug endpoint disabled in production'}), 403
     session_data = dict(session)
     session.clear()
     flash('Session cleared.', 'info')

@@ -15,6 +15,7 @@
     <meta property="og:url" content="https://wealthwise-0y3c.onrender.com">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="WealthWise">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     
     <!-- SEO Meta Tags -->
     <meta name="description" content="WealthWise - Perfect for students and anyone wanting to manage finances smartly. Track expenses, income, get AI advice, and generate detailed financial reports.">
@@ -180,6 +181,7 @@
                             <div class="dropdown-menu dropdown-menu-end">
                                 <h6 class="dropdown-header">Profile Settings</h6>
                                 <label class="dropdown-item d-flex align-items-center">
+                                    {{ form.hidden_tag() }}
                                     <span class="switch-label">2FA <i class="bi bi-shield-lock-fill" style="color: #28a745;"></i></span>
                                     <div class="switch">
                                         <input type="checkbox" id="toggle-2fa-switch" data-user-id="{{ user['id'] }}" 
@@ -225,8 +227,6 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-HjW8v0j/fcO5z3XqI2q3Xv7lX5u5f7f5g5h5i5j5k5l5m5n5o5p5q5r5s5t5u5v5w5x5y5z" crossorigin="anonymous"></script>
-    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Auto-collapse sidebar if screen width is less than 768px (mobile)
@@ -247,12 +247,22 @@
             });
 
             // 2FA Toggle Logic
-            const toggle2faSwitch = document.getElementById('toggle-2fa-switch');
+          const toggle2faSwitch = document.getElementById('toggle-2fa-switch');
             if (toggle2faSwitch) {
                 toggle2faSwitch.addEventListener('change', function(e) {
                     const userId = this.getAttribute('data-user-id');
                     const isEnabled = this.checked;
-                    const csrfToken = '{{ session["_csrf_token"]|default(os.urandom(16).hex())|safe }}'; // Fallback token
+
+                    // Get CSRF token from meta tag or hidden input
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+                                    document.querySelector('input[name="_csrf_token"]')?.value;
+
+                    if (!csrfToken) {
+                        console.error('CSRF token not found');
+                        alert('An error occurred. Please try again.');
+                        this.checked = !isEnabled; // Revert switch
+                        return;
+                    }
 
                     fetch(`/toggle_otp/${userId}`, {
                         method: 'POST',
@@ -266,7 +276,6 @@
                         if (!response.ok) {
                             throw new Error('Network response was not ok');
                         }
-                        // Redirect to dashboard to show flash message
                         window.location.href = `/dashboard/${userId}`;
                     })
                     .catch(error => {
