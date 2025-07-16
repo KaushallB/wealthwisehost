@@ -24,6 +24,8 @@ import zipfile
 import io
 import logging
 import requests
+from langchain.prompts import ChatPromptTemplate
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
 
@@ -50,18 +52,13 @@ else:
     app.config['MAIL_DEFAULT_SENDER'] = 'noreply@wealthwise.com'
 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-if not app.config['SECRET_KEY']:
-    raise ValueError("SECRET_KEY must be set in environment variables")
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'WealthWise')
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 app.config['TESTING'] = False
 app.config['MAIL_DEBUG'] = True
 app.config['MAIL_SUPPRESS_SEND'] = False
 app.config['MAIL_FAIL_SILENTLY'] = False
 app.config['WTF_CSRF_ENABLED'] = True
-app.config['DEBUG'] = False
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = True  # Requires HTTPS
 
 db = SQLAlchemy(app)
 enc = Bcrypt(app)
@@ -111,8 +108,6 @@ def is_real_email(email):
     
 @app.route('/debug_session')
 def debug_session():
-    if not app.config['DEBUG']:  # Only allow in debug mode
-        return jsonify({'error': 'Debug endpoint disabled in production'}), 403
     session_data = dict(session)
     session.clear()
     flash('Session cleared.', 'info')
@@ -380,14 +375,13 @@ def reset_password(token):
     return render_template('reset_password.html', form=form, token=token)
 
 #REGISTRATION
-
 @app.route('/registration', methods=['GET', 'POST'])
 def registration():
     form = RegistrationForm()
     if form.validate_on_submit():
         full_name = form.full_name.data
         email = form.email.data
-        phone_num = form.phone_num.data
+        phone_num = form.phone_num.data  
         address = form.address.data
         pw = form.password.data
         
@@ -398,12 +392,6 @@ def registration():
         try:
             conn = get_db_connection()
             cursor = conn.cursor(cursor_factory=DictCursor)
-            phone_num = re.sub(r'^\+977', '', phone_num).strip()
-            if not re.match(r'^\d{10}$', phone_num):
-                flash('Phone number must be 10 digits (with or without +977).', 'danger')
-                cursor.close()
-                conn.close()
-                return redirect(url_for('registration'))
             cursor.execute('SELECT * FROM users WHERE phone_number=%s OR email=%s', (phone_num, email))
             account = cursor.fetchone()
             if account:
@@ -417,9 +405,9 @@ def registration():
             else:
                 hash_pw = enc.generate_password_hash(pw).decode('utf-8')
                 cursor.execute('''
-                    INSERT INTO users (full_name, email, phone_number, address, password_hash)
-                    VALUES (%s, %s, %s, %s, %s)
-                ''', (full_name, email, phone_num, address, hash_pw))
+                    INSERT INTO users (full_name, email, phone_number, address, password_hash, use_otp)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                ''', (full_name, email, phone_num, address, hash_pw, True))
                 conn.commit()
                 try:
                     msg = Message("Welcome to WealthWise!", recipients=[email])
@@ -433,6 +421,17 @@ def registration():
                 conn.close()
                 flash('You Have Successfully Registered!', 'success')
                 return redirect(url_for('login'))
+        except psycopg2.IntegrityError as e:
+            conn.rollback()
+            if 'unique_phone_number' in str(e):
+                flash('Phone Number Already Registered! Please use a new number.', 'danger')
+            elif 'unique_email' in str(e):
+                flash('Email Already Registered! Please use a new email.', 'danger')
+            else:
+                flash(f'Registration error: {str(e)}', 'danger')
+            cursor.close()
+            conn.close()
+            return redirect(url_for('registration'))
         except Exception as e:
             logging.error(f"Registration error: {str(e)}")
             flash(f'Error occurred: {str(e)}', 'danger')
@@ -440,6 +439,7 @@ def registration():
                 conn.rollback()
                 conn.close()
     return render_template('register.html', form=form)
+
 #LOGOUT
 @app.route('/logout')
 def logout():
@@ -453,6 +453,9 @@ def logout():
 def dashboard(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
         return redirect(url_for('login'))
+    
+    if request.args.get('flash_message'):
+        flash(request.args.get('flash_message'), 'success')
     
     form = LoginForm()  # Add for CSRF token
     conn = None
@@ -603,20 +606,42 @@ def chatbot(user_id):
         conn.close()
         if request.method == 'POST':
             user_message = request.form.get('message', '').strip()
-            context = request.form.get('context', '').strip()
+            context = request.form.get('context', '').strip() or ""
             if not user_message:
                 return jsonify({'response': 'Please enter a message.'}), 400
             try:
-                api_key = os.environ.get('GEMINI_API_KEY', 'AIzaSyB7pR7-troHzMtol6RuaUnnVpxU1xBeS6w')  # Use env var or fallback to new key
-                genai.configure(api_key=api_key)
-                model = genai.GenerativeModel('gemini-2.5-flash')
-                response = model.generate_content(user_message)
-                ai_response = response.text
+                api_key = os.environ.get('GEMINI_API_KEY')
+                if not api_key:
+                    raise ValueError("API key not found in environment variables.")
+                model = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+                template = """
+                You are a financial advisor for WealthWise, a finance management, advising, and recommendation app for students in Nepal. Provide concise, accurate financial advice (under 100 words) in NPR, focusing on budgeting and differentiating needs vs. wants. 
+                Needs are essential expenses (e.g., rent, groceries, utilities); wants are non-essential (e.g., entertainment, dining out). 
+                The average income of Nepalese students is from around Rs 5000.00 to Rs 25000.00.
+                Use the user's financial data. Stay professional, avoid non-financial topics, and do not ask questions unless prompted. 
+                If the query is unclear, suggest asking about budgeting or expenses.
+
+                User's financial data: {financial_data}
+
+                Conversation history: {context}
+
+                Question: {question}
+
+                Answer:
+                """
+                prompt = ChatPromptTemplate.from_template(template)
+                chain = prompt | model
+                responseofai = chain.invoke({
+                    "financial_data": financial_data,
+                    "context": context,
+                    "question": user_message
+                })
+                ai_response = responseofai.content if hasattr(responseofai, 'content') else str(responseofai)
                 new_context = f"{context}\nUser: {user_message}\nAI: {ai_response}".strip()
                 return jsonify({'response': ai_response, 'context': new_context})
             except Exception as ai_error:
                 logging.error(f"Gemini API error: {str(ai_error)} - User: {user_id}")
-                return jsonify({'response': 'Sorry, the AI assistant is temporarily unavailable. Please try again later or contact support.'}), 500
+                return jsonify({'response': f'API Error: {str(ai_error)}. Please try again later or contact support.'}), 500
         prefilled_question = request.args.get('question', '')
         return render_template('chatbot.html', user=user, full_name=full_name, prefilled_question=prefilled_question)
     except Exception as e:
@@ -1057,7 +1082,7 @@ def download_reports(user_id):
         cursor.close()
         conn.close()
         if not data:
-            flash('No transaction data available for download.', 'warning')
+            flash('No transaction data available for download. Please add transactions first.', 'danger')
             return redirect(url_for('dashboard', user_id=user_id))
         df = pd.DataFrame(
             [(row['date'], row['category'], row['amount'], row['transaction_type']) for row in data],
@@ -1067,7 +1092,7 @@ def download_reports(user_id):
         df['AMOUNT'] = pd.to_numeric(df['AMOUNT'], errors='coerce')
         df = df.dropna(subset=['AMOUNT'])
         if df.empty:
-            flash('No valid transaction data found after processing.', 'warning')
+            flash('No valid transaction data found after processing.', 'danger')
             return redirect(url_for('dashboard', user_id=user_id))
         excel_filename = f'{full_name}_transactions.xlsx'
         excel_buffer = io.BytesIO()
@@ -1170,6 +1195,7 @@ def download_reports(user_id):
         logging.error(f"Download reports error: {str(e)}")
         flash(f'Error downloading reports: {str(e)}', 'danger')
         return redirect(url_for('dashboard', user_id=user_id))
+    
 
 #VIEWREPORTS
 @app.route('/view_reports/<int:user_id>')
@@ -1278,28 +1304,53 @@ def view_reports(user_id):
 @app.route('/toggle_otp/<int:user_id>', methods=['POST'])
 def toggle_otp(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
-        return jsonify({'success': False, 'message': 'Unauthorized access.'}), 403
+        flash('Unauthorized access.', 'danger')
+        return redirect(url_for('dashboard', user_id=user_id))
+    
+    # Regenerate CSRF token on each request
+    if '_csrf_token' not in session:
+        session['_csrf_token'] = os.urandom(16).hex()
+    
+    # Get CSRF token from request
+    csrf_token = request.headers.get('X-CSRF-Token') or request.form.get('csrf_token')
+    if not csrf_token or csrf_token != session.get('_csrf_token'):
+        flash('Invalid CSRF token.', 'danger')
+        return redirect(url_for('dashboard', user_id=user_id))
+    
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=DictCursor)
         cursor.execute('SELECT use_otp FROM users WHERE id = %s', (user_id,))
         user = cursor.fetchone()
         if not user:
+            flash('User not found.', 'danger')
             cursor.close()
             conn.close()
-            return jsonify({'success': False, 'message': 'User not found.'}), 404
-        new_otp_status = not user['use_otp']
+            return redirect(url_for('dashboard', user_id=user_id))
+        
+        data = request.get_json()
+        new_otp_status = data.get('use_otp', not user['use_otp'])
         cursor.execute('UPDATE users SET use_otp = %s WHERE id = %s', (new_otp_status, user_id))
         conn.commit()
-        cursor.close()
-        conn.close()
+        
+        session.modified = True
         status_text = 'enabled' if new_otp_status else 'disabled'
-        flash(f'2FA has been {status_text}.', 'success')
-        return jsonify({'success': True, 'use_otp': new_otp_status})
+        flash(f'2FA has been {status_text} successfully!', 'success')
+        return redirect(url_for('dashboard', user_id=user_id))
+    
     except Exception as e:
         logging.error(f"Toggle OTP error: {str(e)}")
-        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
-
+        flash(f'Error: {str(e)}', 'danger')
+        if 'conn' in locals():
+            conn.rollback()
+            conn.close()
+        return redirect(url_for('dashboard', user_id=user_id))
+    
+    finally:
+        if 'conn' in locals():
+            cursor.close()
+            conn.close()
+    
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
