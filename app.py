@@ -331,6 +331,7 @@ def reset_password(token):
         flash('Invalid or expired reset link.', 'danger')
         session.pop('reset_token', None)
         return redirect(url_for('forgot_password'))
+    
     if is_logged_in():
         session.pop('user_id', None)
         flash('You have been logged out to reset your password.', 'info')
@@ -453,6 +454,10 @@ def logout():
 def dashboard(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
         return redirect(url_for('login'))
+       
+    # Check for pending OTP verification
+    if 'otp_data' in session:
+        return redirect(url_for('verify_otp'))
     
     if request.args.get('flash_message'):
         flash(request.args.get('flash_message'), 'success')
