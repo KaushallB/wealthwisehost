@@ -38,20 +38,17 @@ app = Flask(__name__)
 csrf = CSRFProtect(app)
 
 # Production configuration for PostgreSQL
-if os.environ.get('RENDER') or os.environ.get('DATABASE_URL'):
-    raw_db_url = os.environ.get('DATABASE_URL')
-    if raw_db_url:
-        app.config['SQLALCHEMY_DATABASE_URI'] = raw_db_url.replace('postgres://', 'postgresql://')
-    else:
-        # Fallback to Render's DATABASE_URL if set
-        app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', '').replace('postgres://', 'postgresql://')
+if os.environ.get('VERCEL'):
+    # Use Aiven PostgreSQL database
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgres://avnadmin:AVNS_oeoS7o2hf90qxX469cH@wealthwise-kaushalbikram44-25e1.b.aivencloud.com:18768/defaultdb?sslmode=require')
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
-    app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER')
-    app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS')
-    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER')
+    app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER', 'wisewealth32@gmail.com')
+    app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS', 'azxa ydvg oxfe rmer')
+    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER', 'wisewealth32@gmail.com')
 else:
+    # Local development
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost/wealthwisenew'
     app.config['MAIL_SERVER'] = 'localhost'
     app.config['MAIL_PORT'] = 1025
@@ -74,12 +71,12 @@ mail = Mail(app)
 nepal_tz = pytz.timezone('Asia/Kathmandu')
 
 def get_db_connection():
-    # Prefer DATABASE_URL (Aiven, Render, Vercel). If not set, use local settings.
-    db_url = os.environ.get('DATABASE_URL')
-    if db_url:
-        # psycopg2 can accept the full DATABASE_URL; ensure it uses sslmode=require for Aiven
-        return psycopg2.connect(db_url)
+    if os.environ.get('VERCEL'):
+        # Use Aiven PostgreSQL connection string
+        DATABASE_URL = os.environ.get('DATABASE_URL', 'postgres://avnadmin:AVNS_oeoS7o2hf90qxX469cH@wealthwise-kaushalbikram44-25e1.b.aivencloud.com:18768/defaultdb?sslmode=require')
+        conn = psycopg2.connect(DATABASE_URL)
     else:
+        # Local development
         conn = psycopg2.connect(
             host="localhost",
             database="wealthwisenew",

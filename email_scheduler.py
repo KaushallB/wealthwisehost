@@ -2,40 +2,53 @@ import time
 from datetime import datetime
 from flask import Flask, render_template, render_template_string
 from flask_mail import Mail, Message
-from flask_mysqldb import MySQL
-import MySQLdb.cursors
+import psycopg2
+from psycopg2.extras import DictCursor
 from decimal import Decimal
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Create separate Flask app for scheduler
 app = Flask(__name__)
 
-# Copy your configuration from main app
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'wealthwisenew'
+# Configuration - using Aiven PostgreSQL
+if os.environ.get('VERCEL'):
+    DATABASE_URL = os.environ.get('DATABASE_URL', 'postgres://avnadmin:AVNS_oeoS7o2hf90qxX469cH@wealthwise-kaushalbikram44-25e1.b.aivencloud.com:18768/defaultdb?sslmode=require')
+    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER', 'wisewealth32@gmail.com')
+    app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS', 'azxa ydvg oxfe rmer')
+    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER', 'wisewealth32@gmail.com')
+else:
+    DATABASE_URL = 'postgresql://postgres:root@localhost/wealthwisenew'
+    app.config['MAIL_SERVER'] = 'localhost'
+    app.config['MAIL_PORT'] = 1025
+    app.config['MAIL_USE_TLS'] = False
+    app.config['MAIL_USERNAME'] = None
+    app.config['MAIL_PASSWORD'] = None
+    app.config['MAIL_DEFAULT_SENDER'] = 'noreply@wealthwise.com'
 
-app.config['MAIL_SERVER'] = 'localhost'
-app.config['MAIL_PORT'] = 1025
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = False
-app.config['MAIL_USERNAME'] = None
-app.config['MAIL_PASSWORD'] = None
-app.config['MAIL_DEFAULT_SENDER'] = 'noreply@wealthwise.com'
-
-mysql = MySQL(app)
 mail = Mail(app)
+
+def get_db_connection():
+    """Get database connection"""
+    return psycopg2.connect(DATABASE_URL)
 
 def send_daily_reminders():
     with app.app_context():
         try:
-            cursor = mysql.connection.cursor(MySQLdb.cursors.DictCursor)
+            conn = get_db_connection()
+            cursor = conn.cursor(cursor_factory=DictCursor)
             cursor.execute('SELECT id, full_name, email FROM users')
             users = cursor.fetchall()
             
             if not users:
                 print("No users found in database")
+                cursor.close()
+                conn.close()
                 return
             
             for user in users:
@@ -102,6 +115,7 @@ def send_daily_reminders():
                     continue
                     
             cursor.close()
+            conn.close()
             print(f"Daily reminders sent to {len(users)} users at {datetime.now()}")
             
         except Exception as e:
