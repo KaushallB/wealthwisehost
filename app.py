@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 from flask_bcrypt import Bcrypt
-from forms import RegistrationForm, LoginForm, ForgotPasswordForm, ResetPasswordForm ,OtpForm
-from flask_sqlalchemy import SQLAlchemy
+from flask_wtf.csrf import CSRFProtect
+from forms import RegistrationForm, LoginForm, ForgotPasswordForm, ResetPasswordForm, OtpForm
 import re
 from flask_mail import Mail, Message
 import pandas as pd
@@ -33,6 +33,9 @@ logging.basicConfig(level=logging.ERROR, filename='app.log')
 
 app = Flask(__name__)
 
+# Initialize CSRF protection
+csrf = CSRFProtect(app)
+
 # Production configuration for PostgreSQL
 if os.environ.get('RENDER'):
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql://')
@@ -51,7 +54,6 @@ else:
     app.config['MAIL_PASSWORD'] = None
     app.config['MAIL_DEFAULT_SENDER'] = 'noreply@wealthwise.com'
 
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'WealthWise')
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 app.config['TESTING'] = False
@@ -60,7 +62,6 @@ app.config['MAIL_SUPPRESS_SEND'] = False
 app.config['MAIL_FAIL_SILENTLY'] = False
 app.config['WTF_CSRF_ENABLED'] = True
 
-db = SQLAlchemy(app)
 enc = Bcrypt(app)
 mail = Mail(app)
 
@@ -95,17 +96,15 @@ def is_real_email(email):
         response = requests.get(url, timeout=5)
         if response.status_code == 200:
             data = response.json()
-            # Check if deliverability is 'DELIVERABLE'
             return data.get('deliverability') == 'DELIVERABLE'
         else:
-            # If API fails, allow registration to proceed
             logging.warning(f"Email validation API failed with status {response.status_code}")
             return True
     except Exception as e:
-        # If API request fails, allow registration to proceed
         logging.error(f"Email validation error: {str(e)}")
         return True
-    
+
+#DEBUG SESSION
 @app.route('/debug_session')
 def debug_session():
     session_data = dict(session)
@@ -114,6 +113,7 @@ def debug_session():
     logging.info(f"Cleared session: {session_data}")
     return jsonify(session_data)
 
+#HOME
 @app.route('/')
 def home():
     return redirect(url_for('login'))
@@ -121,10 +121,10 @@ def home():
 #LOGIN
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    log = LoginForm()
-    if log.validate_on_submit():
-        input_data = log.email_or_phone.data.strip()
-        pw = log.password.data
+    form = LoginForm()
+    if form.validate_on_submit():
+        input_data = form.email_or_phone.data.strip()
+        pw = form.password.data
         try:
             conn = get_db_connection()
             cursor = conn.cursor(cursor_factory=DictCursor)
@@ -154,7 +154,6 @@ def login():
                 stored_hashed_pw = account['password_hash']
                 full_name = account['full_name']
                 email = account['email']
-                use_otp = account['use_otp']
                 if enc.check_password_hash(stored_hashed_pw, pw):
                     if use_otp:
                         if 'otp_data' not in session or not session.get('otp_data'):
@@ -200,7 +199,7 @@ def login():
             if 'conn' in locals():
                 conn.rollback()
                 conn.close()
-    return render_template('login.html', form=log)
+    return render_template('login.html', form=form)
 
 #RESENDOTP
 @app.route('/resend_otp', methods=['GET'])
@@ -462,7 +461,6 @@ def dashboard(user_id):
     if request.args.get('flash_message'):
         flash(request.args.get('flash_message'), 'success')
     
-    form = LoginForm()
     conn = None
     cursor = None
     
@@ -485,10 +483,10 @@ def dashboard(user_id):
             cursor.execute('''
                 INSERT INTO budget_allocations 
                 (user_id, needs_percent, wants_percent, savings_percent, total_budget)
-                VALUES (%s, 50.00, 30.00, 20.00, 0.00)
-            ''', (user_id,))
+                VALUES (%s, %s, %s, %s, %s)
+            ''', (user_id, 50.00, 30.00, 20.00, 0.00))
             conn.commit()
-            allocation = {'needs_percent': 50, 'wants_percent': 30, 'savings_percent': 20, 'total_budget': 0}
+            allocation = {'needs_percent': Decimal('50.00'), 'wants_percent': Decimal('30.00'), 'savings_percent': Decimal('20.00'), 'total_budget': Decimal('0.00')}
         
         current_time = datetime.now(nepal_tz)
         current_month = current_time.month
@@ -507,47 +505,54 @@ def dashboard(user_id):
         ''', (user_id, current_month, current_year))
         
         monthly_data = cursor.fetchone() or {
-            'monthly_income': 0,
-            'needs_spent': 0,
-            'wants_spent': 0,
-            'savings_made': 0
+            'monthly_income': Decimal('0'),
+            'needs_spent': Decimal('0'),
+            'wants_spent': Decimal('0'),
+            'savings_made': Decimal('0')
         }
         
-        monthly_income = Decimal(str(monthly_data['monthly_income']))
-        needs_spent = Decimal(str(monthly_data['needs_spent']))
-        wants_spent = Decimal(str(monthly_data['wants_spent']))
-        savings_made = Decimal(str(monthly_data['savings_made']))
+        # Convert to Decimal safely
+        monthly_income = Decimal(str(monthly_data['monthly_income'] or '0'))
+        needs_spent = Decimal(str(monthly_data['needs_spent'] or '0'))
+        wants_spent = Decimal(str(monthly_data['wants_spent'] or '0'))
+        savings_made = Decimal(str(monthly_data['savings_made'] or '0'))
         
-        needs_limit = (monthly_income * Decimal(str(allocation['needs_percent']))) / 100
-        wants_limit = (monthly_income * Decimal(str(allocation['wants_percent']))) / 100
-        savings_target = (monthly_income * Decimal(str(allocation['savings_percent']))) / 100
+        # Ensure allocation percentages are Decimal
+        needs_percent = Decimal(str(allocation['needs_percent'] or '50.00'))
+        wants_percent = Decimal(str(allocation['wants_percent'] or '30.00'))
+        savings_percent = Decimal(str(allocation['savings_percent'] or '20.00'))
         
+        # Calculate limits and targets
+        needs_limit = (monthly_income * needs_percent) / 100
+        wants_limit = (monthly_income * wants_percent) / 100
+        savings_target = (monthly_income * savings_percent) / 100
+        
+        # Calculate remaining amounts
         needs_remaining = max(Decimal('0'), needs_limit - needs_spent)
         wants_remaining = max(Decimal('0'), wants_limit - wants_spent)
         savings_remaining = max(Decimal('0'), savings_target - savings_made)
         
-        return render_template('dashboard.html', 
-                            user=user,
-                            monthly_income=float(monthly_income),
-                            needs_limit=float(needs_limit),
-                            wants_limit=float(wants_limit),
-                            savings_target=float(savings_target),
-                            needs_spent=float(needs_spent),
-                            wants_spent=float(wants_spent),
-                            savings_made=float(savings_made),
-                            needs_remaining=float(needs_remaining),
-                            wants_remaining=float(wants_remaining),
-                            savings_remaining=float(savings_remaining),
-                            current_month_name=current_time.strftime('%B'),
-                            current_year=current_year,
-                            monthly_expenses=float(needs_spent + wants_spent),
-                            nepal_tz=nepal_tz,
-                            use_otp=user['use_otp'] if user['use_otp'] is not None else False,
-                            form=form)
+        return render_template('dashboard.html',
+                              user=user,
+                              monthly_income=float(monthly_income),
+                              needs_limit=float(needs_limit),
+                              wants_limit=float(wants_limit),
+                              savings_target=float(savings_target),
+                              needs_spent=float(needs_spent),
+                              wants_spent=float(wants_spent),
+                              savings_made=float(savings_made),
+                              needs_remaining=float(needs_remaining),
+                              wants_remaining=float(wants_remaining),
+                              savings_remaining=float(savings_remaining),
+                              current_month_name=current_time.strftime('%B'),
+                              current_year=current_year,
+                              monthly_expenses=float(needs_spent + wants_spent),
+                              nepal_tz=nepal_tz,
+                              use_otp=user['use_otp'] if user['use_otp'] is not None else False)
                             
     except Exception as e:
-        logging.error(f"Dashboard error for user_id {user_id}: {str(e)}", exc_info=True)
-        flash('An error occurred while loading the dashboard. Please try again or re-register if the issue persists.', 'danger')
+        logging.error(f"Dashboard error for user_id {user_id}: {str(e)}, monthly_data={monthly_data}, allocation={allocation}", exc_info=True)
+        flash(f'An error occurred while loading the dashboard: {str(e)}. Please try again.', 'danger')
         return redirect(url_for('login'))
         
     finally:
@@ -829,15 +834,15 @@ def add_expense(user_id):
                         AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
                     ''', (user_id, current_month, current_year))
                     income_result = cursor.fetchone()
-                    monthly_income = income_result['monthly_income'] or 0
+                    monthly_income = Decimal(str(income_result['monthly_income'] or '0'))
                     cursor.execute("SELECT * FROM budget_allocations WHERE user_id = %s", (user_id,))
                     allocation = cursor.fetchone()
                     if allocation and monthly_income > 0:
                         if category.lower() == 'needs':
-                            limit = (monthly_income * allocation['needs_percent']) / 100
+                            limit = (monthly_income * Decimal(str(allocation['needs_percent'] or '50.00'))) / 100
                             category_name = "Needs"
                         elif category.lower() == 'wants':
-                            limit = (monthly_income * allocation['wants_percent']) / 100
+                            limit = (monthly_income * Decimal(str(allocation['wants_percent'] or '30.00'))) / 100
                             category_name = "Wants"
                         cursor.execute('''
                             SELECT SUM(amount) as spent 
@@ -846,11 +851,11 @@ def add_expense(user_id):
                             AND category = %s AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
                         ''', (user_id, category, current_month, current_year))
                         spent_result = cursor.fetchone()
-                        current_spent = spent_result['spent'] or 0
+                        current_spent = Decimal(str(spent_result['spent'] or '0'))
                         percentage_used = (current_spent / limit) * 100 if limit > 0 else 0
                         if current_spent > limit:
                             overage = current_spent - limit
-                            flash(f'Budget Alert: You have exceeded your {category_name} budget by Rs {overage:.2f} this month. Warning Email has been sent', 'warning')
+                            flash(f'Budget Alert: You have exceeded your {category_name} budget by Rs {float(overage):.2f} this month. Warning Email has been sent', 'warning')
                             try:
                                 msg = Message("Budget Warning - WealthWise", recipients=[user['email']])
                                 msg.html = render_template("warning.html", 
@@ -867,7 +872,7 @@ def add_expense(user_id):
                                 logging.error(f"Budget warning email sending failed: {str(email_error)}")
                         elif percentage_used >= 80:
                             remaining = limit - current_spent
-                            flash(f'Budget Notice: You have Rs {remaining:.2f} remaining in your {category_name} budget this month. Warning Email has been sent', 'info')
+                            flash(f'Budget Notice: You have Rs {float(remaining):.2f} remaining in your {category_name} budget this month. Warning Email has been sent', 'info')
                             try:
                                 msg = Message("Budget Alert - WealthWise", recipients=[user['email']])
                                 msg.html = render_template("warning.html", 
@@ -892,11 +897,11 @@ def add_expense(user_id):
                         AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
                     ''', (user_id, current_month, current_year))
                     income_result = cursor.fetchone()
-                    monthly_income = income_result['monthly_income'] or 0
+                    monthly_income = Decimal(str(income_result['monthly_income'] or '0'))
                     cursor.execute("SELECT * FROM budget_allocations WHERE user_id = %s", (user_id,))
                     allocation = cursor.fetchone()
                     if allocation and monthly_income > 0:
-                        savings_target = (monthly_income * allocation['savings_percent']) / 100
+                        savings_target = (monthly_income * Decimal(str(allocation['savings_percent'] or '20.00'))) / 100
                         cursor.execute('''
                             SELECT SUM(amount) as saved 
                             FROM transactions 
@@ -904,12 +909,12 @@ def add_expense(user_id):
                             AND category = 'savings' AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
                         ''', (user_id, current_month, current_year))
                         saved_result = cursor.fetchone()
-                        current_saved = saved_result['saved'] or 0
+                        current_saved = Decimal(str(saved_result['saved'] or '0'))
                         if current_saved >= savings_target:
-                            flash(f'Great job! You have saved Rs {current_saved:.2f}, meeting your savings target of Rs {savings_target:.2f} this month.', 'success')
+                            flash(f'Great job! You have saved Rs {float(current_saved):.2f}, meeting your savings target of Rs {float(savings_target):.2f} this month.', 'success')
                         else:
                             remaining = savings_target - current_saved
-                            flash(f'Savings Update: You have saved Rs {current_saved:.2f}. Aim to save Rs {remaining:.2f} more to meet your target of Rs {savings_target:.2f}.', 'info')
+                            flash(f'Savings Update: You have saved Rs {float(current_saved):.2f}. Aim to save Rs {float(remaining):.2f} more to meet your target of Rs {float(savings_target):.2f}.', 'info')
                 cursor.close()
                 conn.close()
                 return redirect(url_for('add_expense', user_id=user_id))
@@ -936,24 +941,24 @@ def add_expense(user_id):
         WHERE user_id = %s AND EXTRACT(MONTH FROM date) = %s AND EXTRACT(YEAR FROM date) = %s
     ''', (user_id, current_month, current_year))
     monthly_data = cursor.fetchone()
-    monthly_income = monthly_data['monthly_income'] or 0
+    monthly_income = Decimal(str(monthly_data['monthly_income'] or '0'))
     cursor.execute("SELECT * FROM budget_allocations WHERE user_id = %s", (user_id,))
     allocation = cursor.fetchone()
     if allocation and monthly_income > 0:
-        needs_limit = (monthly_income * allocation['needs_percent']) / 100
-        wants_limit = (monthly_income * allocation['wants_percent']) / 100
+        needs_limit = (monthly_income * Decimal(str(allocation['needs_percent'] or '50.00'))) / 100
+        wants_limit = (monthly_income * Decimal(str(allocation['wants_percent'] or '30.00'))) / 100
     else:
-        needs_limit = 0
-        wants_limit = 0
+        needs_limit = Decimal('0')
+        wants_limit = Decimal('0')
     cursor.close()
     conn.close()
     return render_template('add_expense.html', 
                          user=user, 
                          recent_expenses=recent_expenses,
-                         needs_spent=monthly_data['needs_spent'] or 0,
-                         wants_spent=monthly_data['wants_spent'] or 0,
-                         needs_limit=needs_limit,
-                         wants_limit=wants_limit,
+                         needs_spent=float(monthly_data['needs_spent'] or 0),
+                         wants_spent=float(monthly_data['wants_spent'] or 0),
+                         needs_limit=float(needs_limit),
+                         wants_limit=float(wants_limit),
                          nepal_tz=nepal_tz)
 
 #EDITEXPENSE
@@ -1196,7 +1201,6 @@ def download_reports(user_id):
         logging.error(f"Download reports error: {str(e)}")
         flash(f'Error downloading reports: {str(e)}', 'danger')
         return redirect(url_for('dashboard', user_id=user_id))
-    
 
 #VIEWREPORTS
 @app.route('/view_reports/<int:user_id>')
@@ -1251,9 +1255,9 @@ def view_reports(user_id):
             wants_percent = Decimal('30.00')
             savings_percent = Decimal('20.00')
         else:
-            needs_percent = Decimal(budget['needs_percent']) if budget.get('needs_percent') else Decimal('50.00')
-            wants_percent = Decimal(budget['wants_percent']) if budget.get('wants_percent') else Decimal('30.00')
-            savings_percent = Decimal(budget['savings_percent']) if budget.get('savings_percent') else Decimal('20.00')
+            needs_percent = Decimal(str(budget['needs_percent'] or '50.00'))
+            wants_percent = Decimal(str(budget['wants_percent'] or '30.00'))
+            savings_percent = Decimal(str(budget['savings_percent'] or '20.00'))
         needs_budget = (needs_percent / 100) * total_income if total_income > 0 else Decimal('0.0')
         wants_budget = (wants_percent / 100) * total_income if total_income > 0 else Decimal('0.0')
         savings_budget = (savings_percent / 100) * total_income if total_income > 0 else Decimal('0.0')
@@ -1308,16 +1312,6 @@ def toggle_otp(user_id):
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('dashboard', user_id=user_id))
     
-    # Regenerate CSRF token on each request
-    if '_csrf_token' not in session:
-        session['_csrf_token'] = os.urandom(16).hex()
-    
-    # Get CSRF token from request
-    csrf_token = request.headers.get('X-CSRF-Token') or request.form.get('csrf_token')
-    if not csrf_token or csrf_token != session.get('_csrf_token'):
-        flash('Invalid CSRF token.', 'danger')
-        return redirect(url_for('dashboard', user_id=user_id))
-    
     try:
         conn = get_db_connection()
         cursor = conn.cursor(cursor_factory=DictCursor)
@@ -1351,8 +1345,6 @@ def toggle_otp(user_id):
         if 'conn' in locals():
             cursor.close()
             conn.close()
-    
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
