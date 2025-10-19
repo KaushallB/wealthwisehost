@@ -38,9 +38,9 @@ app = Flask(__name__)
 csrf = CSRFProtect(app)
 
 # Production configuration for PostgreSQL
-if os.environ.get('DATABASE_URL'):
-    # Production (Render or any platform with DATABASE_URL)
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+if os.environ.get('RENDER'):
+    # Production (Render)
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql://')
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
