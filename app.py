@@ -17,6 +17,7 @@ import string
 import psycopg2
 from psycopg2.extras import DictCursor
 from dotenv import load_dotenv
+from secret_key import get_secret_key
 import pytz
 from google import genai
 from flask import send_file
@@ -37,8 +38,13 @@ app = Flask(__name__)
 csrf = CSRFProtect(app)
 
 # Production configuration for PostgreSQL
-if os.environ.get('RENDER'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql://')
+if os.environ.get('RENDER') or os.environ.get('DATABASE_URL'):
+    raw_db_url = os.environ.get('DATABASE_URL')
+    if raw_db_url:
+        app.config['SQLALCHEMY_DATABASE_URI'] = raw_db_url.replace('postgres://', 'postgresql://')
+    else:
+        # Fallback to Render's DATABASE_URL if set
+        app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', '').replace('postgres://', 'postgresql://')
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
@@ -54,7 +60,7 @@ else:
     app.config['MAIL_PASSWORD'] = None
     app.config['MAIL_DEFAULT_SENDER'] = 'noreply@wealthwise.com'
 
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'WealthWise')
+app.config['SECRET_KEY'] = get_secret_key()
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 app.config['TESTING'] = False
 app.config['MAIL_DEBUG'] = True
@@ -68,8 +74,11 @@ mail = Mail(app)
 nepal_tz = pytz.timezone('Asia/Kathmandu')
 
 def get_db_connection():
-    if os.environ.get('RENDER'):
-        conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+    # Prefer DATABASE_URL (Aiven, Render, Vercel). If not set, use local settings.
+    db_url = os.environ.get('DATABASE_URL')
+    if db_url:
+        # psycopg2 can accept the full DATABASE_URL; ensure it uses sslmode=require for Aiven
+        return psycopg2.connect(db_url)
     else:
         conn = psycopg2.connect(
             host="localhost",
