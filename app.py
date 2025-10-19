@@ -17,6 +17,7 @@ import string
 import psycopg2
 from psycopg2.extras import DictCursor
 from dotenv import load_dotenv
+from secret_key import get_secret_key
 import pytz
 from google import genai
 from flask import send_file
@@ -56,7 +57,7 @@ else:
     app.config['MAIL_PASSWORD'] = None
     app.config['MAIL_DEFAULT_SENDER'] = 'noreply@wealthwise.com'
 
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'WealthWise')
+app.config['SECRET_KEY'] = get_secret_key()
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
 app.config['TESTING'] = False
 app.config['MAIL_DEBUG'] = True
