@@ -3,10 +3,7 @@
   "builds": [
     {
       "src": "app.py",
-      "use": "@vercel/python",
-      "config": {
-        "maxLambdaSize": "50mb"
-      }
+      "use": "@vercel/python"
     }
   ],
   "routes": [
@@ -15,12 +12,6 @@
       "dest": "app.py"
     }
   ],
-  "functions": {
-    "app.py": {
-      "includeFiles": "templates/**",
-      "excludeFiles": "Offlinereports/**"
-    }
-  },
   "env": {
     "VERCEL": "true",
     "DATABASE_URL": "postgres://avnadmin:AVNS_oeoS7o2hf90qxX469cH@wealthwise-kaushalbikram44-25e1.b.aivencloud.com:18768/defaultdb?sslmode=require",
