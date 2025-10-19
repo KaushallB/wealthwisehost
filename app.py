@@ -415,16 +415,13 @@ def registration():
                     VALUES (%s, %s, %s, %s, %s, %s)
                 ''', (full_name, email, phone_num, address, hash_pw, True))
                 conn.commit()
-                try:
-                    msg = Message("Welcome to WealthWise!", recipients=[email])
-                    msg.html = render_template("welcome_mail.html", full_name=full_name)
-                    mail.send(msg)
-                    logging.info(f"Welcome email sent to {email}")
-                except Exception as email_error:
-                    logging.error(f"Welcome email sending failed: {str(email_error)}")
-                    flash('Registration successful, but failed to send welcome email.', 'warning')
                 cursor.close()
                 conn.close()
+                
+                # Skip welcome email for now (to avoid timeout issues)
+                # TODO: Implement background email sending with Celery or similar
+                logging.info(f"User registered: {email} (welcome email skipped)")
+                
                 flash('You Have Successfully Registered!', 'success')
                 return redirect(url_for('login'))
         except psycopg2.IntegrityError as e:
