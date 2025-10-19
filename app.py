@@ -42,9 +42,8 @@ if os.environ.get('DATABASE_URL'):
     # Production (Render or any platform with DATABASE_URL)
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-    app.config['MAIL_PORT'] = 465
-    app.config['MAIL_USE_SSL'] = True
-    app.config['MAIL_USE_TLS'] = False
+    app.config['MAIL_PORT'] = 587
+    app.config['MAIL_USE_TLS'] = True
     app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER')
     app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS')
     app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER')
@@ -163,13 +162,30 @@ def login():
                 email = account['email']
                 if enc.check_password_hash(stored_hashed_pw, pw):
                     if use_otp:
-                        # OTP disabled - Render blocks SMTP, login directly
-                        logging.info(f"OTP login bypassed for {email} - SMTP blocked by Render")
-                        session['user_id'] = account['id']
-                        flash('Login Successful (OTP temporarily disabled)', 'success')
+                        if 'otp_data' not in session or not session.get('otp_data'):
+                            otp = generate_otp()
+                            otp_expiry = (datetime.now(nepal_tz) + timedelta(minutes=5)).timestamp()
+                            session['otp_data'] = {
+                                'otp': otp,
+                                'email': email,
+                                'user_id': account['id'],
+                                'full_name': full_name,
+                                'expires': otp_expiry,
+                                'attempts': 0,
+                                'lockout_time': None
+                            }
+                            try:
+                                msg = Message("Your Wealthwise OTP", recipients=[email])
+                                msg.html = render_template("otp_email.html", full_name=full_name, otp=otp)
+                                mail.send(msg)
+                                flash("An OTP has been sent to your email.", 'info')
+                                logging.info(f"OTP sent to {email}")
+                            except Exception as email_error:
+                                logging.error(f"OTP email sending failed: {str(email_error)}")
+                                flash(f'Error sending OTP: {str(email_error)}', 'danger')
                         cursor.close()
                         conn.close()
-                        return redirect(url_for('dashboard', user_id=account['id']))
+                        return redirect(url_for('verify_otp'))
                     else:
                         session['user_id'] = account['id']
                         session.pop('otp_data', None)
@@ -286,11 +302,15 @@ def forgot_password():
                     'phone': user['phone_number'],
                     'expires': (datetime.now(nepal_tz) + timedelta(minutes=3)).timestamp()
                 }
-                
-                # Email sending disabled - Render blocks SMTP connections
-                logging.info(f"Password reset requested for {user['email']}, token: {token}")
-                flash(f'Password reset email disabled. Please contact support or use this link: {reset_url}', 'warning')
-                
+                try:
+                    msg = Message("Password Reset Request", recipients=[user['email']])
+                    msg.html = render_template("password_reset_email.html", full_name=user['full_name'], reset_url=reset_url)
+                    mail.send(msg)
+                    flash('A password reset link has been sent to your email.', 'success')
+                    logging.info(f"Password reset email sent to {user['email']}")
+                except Exception as email_error:
+                    logging.error(f"Password reset email sending failed: {str(email_error)}")
+                    flash(f'Error sending email: {str(email_error)}', 'danger')
             else:
                 flash('Email or phone number not found. Please register first.', 'danger')
                 logging.warning(f"Identifier not found: {identifier}")
@@ -398,9 +418,13 @@ def registration():
                 cursor.close()
                 conn.close()
                 
-                # Email sending disabled - Render blocks SMTP connections
-                # TODO: Use SendGrid, Mailgun, or AWS SES instead
-                logging.info(f"User registered: {email} (email not sent - SMTP blocked by Render)")
+                try:
+                    msg = Message("Welcome to WealthWise!", recipients=[email])
+                    msg.html = render_template("welcome_mail.html", full_name=full_name)
+                    mail.send(msg)
+                    logging.info(f"Welcome email sent to {email}")
+                except Exception as email_error:
+                    logging.error(f"Welcome email sending failed: {str(email_error)}")
                 
                 flash('You Have Successfully Registered!', 'success')
                 return redirect(url_for('login'))
