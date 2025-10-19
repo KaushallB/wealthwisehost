@@ -1,0 +1,28 @@
+name: wealthwise
+services:
+  - name: web
+    environment_slug: python
+    github:
+      repo: KaushallB/wealthwisehost
+      branch: main
+      deploy_on_push: true
+    build_command: pip install -r requirements.txt
+    run_command: gunicorn app:app
+    envs:
+      - key: DATABASE_URL
+        value: postgres://avnadmin:AVNS_oeoS7o2hf90qxX469cH@wealthwise-kaushalbikram44-25e1.b.aivencloud.com:18768/defaultdb?sslmode=require
+      - key: EMAIL_USER
+        value: wisewealth32@gmail.com
+      - key: EMAIL_PASS
+        value: azxa ydvg oxfe rmer
+      - key: GEMINI_API_KEY
+        value: AIzaSyBaze8MZi4ZxPWWV0w1dFs50_07lyWtcOs
+      - key: SECRET_KEY
+        value: WealthWise
+      - key: PYTHON_VERSION
+        value: 3.11.9
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    routes:
+      - path: /

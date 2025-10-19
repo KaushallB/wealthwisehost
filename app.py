@@ -38,9 +38,9 @@ app = Flask(__name__)
 csrf = CSRFProtect(app)
 
 # Production configuration for PostgreSQL
-if os.environ.get('VERCEL'):
-    # Use Aiven PostgreSQL database
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgres://avnadmin:AVNS_oeoS7o2hf90qxX469cH@wealthwise-kaushalbikram44-25e1.b.aivencloud.com:18768/defaultdb?sslmode=require')
+if os.environ.get('DATABASE_URL'):
+    # Production (DigitalOcean, Vercel, or any platform with DATABASE_URL)
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
@@ -71,9 +71,9 @@ mail = Mail(app)
 nepal_tz = pytz.timezone('Asia/Kathmandu')
 
 def get_db_connection():
-    if os.environ.get('VERCEL'):
-        # Use Aiven PostgreSQL connection string
-        DATABASE_URL = os.environ.get('DATABASE_URL', 'postgres://avnadmin:AVNS_oeoS7o2hf90qxX469cH@wealthwise-kaushalbikram44-25e1.b.aivencloud.com:18768/defaultdb?sslmode=require')
+    if os.environ.get('DATABASE_URL'):
+        # Production - use DATABASE_URL from environment
+        DATABASE_URL = os.environ.get('DATABASE_URL')
         conn = psycopg2.connect(DATABASE_URL)
     else:
         # Local development
