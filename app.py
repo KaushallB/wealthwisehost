@@ -39,14 +39,14 @@ csrf = CSRFProtect(app)
 
 # Production configuration for PostgreSQL
 if os.environ.get('DATABASE_URL'):
-    # Production (DigitalOcean, Vercel, or any platform with DATABASE_URL)
+    # Production (Render or any platform with DATABASE_URL)
     app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
     app.config['MAIL_SERVER'] = 'smtp.gmail.com'
     app.config['MAIL_PORT'] = 587
     app.config['MAIL_USE_TLS'] = True
-    app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER', 'wisewealth32@gmail.com')
-    app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS', 'azxa ydvg oxfe rmer')
-    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER', 'wisewealth32@gmail.com')
+    app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER')
+    app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS')
+    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER')
 else:
     # Local development
     app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:root@localhost/wealthwisenew'
@@ -418,9 +418,13 @@ def registration():
                 cursor.close()
                 conn.close()
                 
-                # Skip welcome email for now (to avoid timeout issues)
-                # TODO: Implement background email sending with Celery or similar
-                logging.info(f"User registered: {email} (welcome email skipped)")
+                try:
+                    msg = Message("Welcome to WealthWise!", recipients=[email])
+                    msg.html = render_template("welcome_mail.html", full_name=full_name)
+                    mail.send(msg)
+                    logging.info(f"Welcome email sent to {email}")
+                except Exception as email_error:
+                    logging.error(f"Welcome email sending failed: {str(email_error)}")
                 
                 flash('You Have Successfully Registered!', 'success')
                 return redirect(url_for('login'))
