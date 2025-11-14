@@ -107,29 +107,27 @@ def send_email(to_email, subject, html_content):
             # Initialize SendPulse client - use None for no token storage
             sp = PySendPulse(sendpulse_id, sendpulse_secret, 'memcached')
             
-            # SendPulse API requires a different payload for its core `send_emails` function
+            # SendPulse API requires a different payload for its core `smtp_send_mail` function
             email_payload = {
-                "email": {
-                    "html": html_content,
-                    "text": subject,
-                    "subject": subject,
-                    "from": {
-                        "name": "WealthWise",
-                        "email": from_email
-                    },
-                    "to": [
-                        {
-                            "name": to_email.split('@')[0],
-                            "email": to_email
-                        }
-                    ]
-                }
+                'html': html_content,
+                'text': subject,
+                'subject': subject,
+                'from': {
+                    'name': 'WealthWise',
+                    'email': from_email
+                },
+                'to': [
+                    {
+                        'name': to_email.split('@')[0],
+                        'email': to_email
+                    }
+                ]
             }
             
-            logging.info(f"Sending email via SendPulse core API (send_emails)...")
+            logging.info(f"Sending email via SendPulse SMTP API (smtp_send_mail)...")
             
-            # Use the core send_emails function instead of the smtp one
-            result = sp.send_emails(email_payload)
+            # Use the original smtp_send_mail function
+            result = sp.smtp_send_mail(email_payload)
             
             logging.info(f"SendPulse full response: {result}")
             
