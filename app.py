@@ -46,10 +46,12 @@ if os.environ.get('RENDER'):
     mail_port = int(os.environ.get('MAIL_PORT', 465))
     use_ssl = os.environ.get('MAIL_USE_SSL', 'true').lower() == 'true'
     use_tls = os.environ.get('MAIL_USE_TLS', 'false').lower() == 'true'
+    mail_timeout = int(os.environ.get('MAIL_TIMEOUT', 10))
     app.config['MAIL_SERVER'] = mail_server
     app.config['MAIL_PORT'] = mail_port
     app.config['MAIL_USE_SSL'] = use_ssl
     app.config['MAIL_USE_TLS'] = use_tls
+    app.config['MAIL_TIMEOUT'] = mail_timeout
     app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER')
     app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS')
     app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER')
@@ -59,6 +61,7 @@ else:
     app.config['MAIL_PORT'] = 1025
     app.config['MAIL_USE_TLS'] = False
     app.config['MAIL_USE_SSL'] = False
+    app.config['MAIL_TIMEOUT'] = 5
     app.config['MAIL_USERNAME'] = None
     app.config['MAIL_PASSWORD'] = None
     app.config['MAIL_DEFAULT_SENDER'] = 'noreply@wealthwise.com'
