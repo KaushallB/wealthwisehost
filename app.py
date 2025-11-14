@@ -30,7 +30,12 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO, filename='app.log', format='%(asctime)s - %(levelname)s - %(message)s')
+# Configure logging to output to console (Render logs)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]
+)
 
 app = Flask(__name__)
 
