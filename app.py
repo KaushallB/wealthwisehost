@@ -10,6 +10,7 @@ matplotlib.use('Agg')  # Using non-interactive backend
 import matplotlib.pylab as plt
 import seaborn as sns
 import os
+import socket
 from datetime import datetime, timedelta
 from decimal import Decimal
 import random 
@@ -65,6 +66,8 @@ else:
     app.config['MAIL_USERNAME'] = None
     app.config['MAIL_PASSWORD'] = None
     app.config['MAIL_DEFAULT_SENDER'] = 'noreply@wealthwise.com'
+
+socket.setdefaulttimeout(app.config.get('MAIL_TIMEOUT', 10))
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'WealthWise')
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=10)
