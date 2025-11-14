@@ -105,7 +105,7 @@ def send_email(to_email, subject, html_content):
             logging.info(f"SendPulse config - ID: {sendpulse_id[:10]}..., From: {from_email}, To: {to_email}")
             
             # Initialize SendPulse client - use None for no token storage
-            sp = PySendPulse(sendpulse_id, sendpulse_secret, 'memcached', timeout=10)
+            sp = PySendPulse(sendpulse_id, sendpulse_secret, 'memcached')
             
             # Prepare email data - using simpler format
             email_body = {
