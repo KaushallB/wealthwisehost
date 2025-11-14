@@ -92,84 +92,41 @@ mail = Mail(app)
 nepal_tz = pytz.timezone('Asia/Kathmandu')
 
 def send_email(to_email, subject, html_content):
-    """Send email using SendPulse API or Flask-Mail fallback"""
-    sendpulse_id = os.environ.get('SENDPULSE_API_ID')
-    sendpulse_secret = os.environ.get('SENDPULSE_API_SECRET')
+    """Send email using Resend API"""
+    resend_api_key = os.environ.get('RESEND_API_KEY')
     from_email = os.environ.get('EMAIL_USER', 'noreply@wealthwise.com')
     
-    if sendpulse_id and sendpulse_secret and os.environ.get('RENDER'):
-        # Use SendPulse on production - using simple email sending API
+    if resend_api_key and os.environ.get('RENDER'):
         try:
-            from pysendpulse.pysendpulse import PySendPulse
+            import resend
+            resend.api_key = resend_api_key
             
-            logging.info(f"SendPulse config - ID: {sendpulse_id[:10]}..., From: {from_email}, To: {to_email}")
-            
-            # Initialize SendPulse client - use None for no token storage
-            sp = PySendPulse(sendpulse_id, sendpulse_secret, 'memcached')
-            
-            # SendPulse API requires a different payload for its core `smtp_send_mail` function
-            email_payload = {
-                'html': html_content,
-                'text': subject,
-                'subject': subject,
-                'from': {
-                    'name': 'WealthWise',
-                    'email': from_email
-                },
-                'to': [
-                    {
-                        'name': to_email.split('@')[0],
-                        'email': to_email
-                    }
-                ]
+            params = {
+                "from": f"WealthWise <{from_email}>",
+                "to": [to_email],
+                "subject": subject,
+                "html": html_content,
             }
             
-            logging.info(f"Sending email via SendPulse SMTP API (smtp_send_mail)...")
+            logging.info(f"Sending email via Resend to {to_email} from {from_email}")
+            email = resend.Emails.send(params)
+            logging.info(f"Resend response: {email}")
             
-            # Use the original smtp_send_mail function
-            result = sp.smtp_send_mail(email_payload)
-            
-            logging.info(f"SendPulse full response: {result}")
-            
-            # Check response format - SendPulse can return different formats
-            if result:
-                # Check if there's an error
-                if isinstance(result, dict):
-                    # Check for error in data
-                    if 'data' in result and result['data'].get('is_error'):
-                        http_code = result['data'].get('http_code', 'unknown')
-                        error_msg = f"SendPulse API error: HTTP {http_code}"
-                        
-                        # If 422, sender not verified - this is the final failure point
-                        if http_code == 422:
-                            logging.error(f"✗ SendPulse failed: Sender email '{from_email}' is not verified in SendPulse.")
-                            logging.error("Please ensure the sender email is added and verified in your SendPulse account settings.")
-                            return False
-                        
-                        logging.error(f"✗ SendPulse failed: {error_msg}")
-                        logging.error(f"Full error response: {result}")
-                        return False
-                    
-                    # Check for success
-                    if result.get('result') is True or not result.get('data', {}).get('is_error'):
-                        logging.info(f"✓ SendPulse email sent successfully to {to_email}")
-                        return True
-                
-                # If we get here, assume success if no explicit error
-                logging.info(f"✓ SendPulse email sent (assumed success)")
+            if email.get('id'):
+                logging.info(f"✓ Email sent successfully via Resend with ID: {email['id']}")
                 return True
             else:
-                logging.error(f"✗ SendPulse failed: No response")
+                logging.error(f"✗ Resend failed: {email}")
                 return False
                 
-        except ImportError as e:
-            logging.error(f"SendPulse library not installed: {str(e)}")
+        except ImportError:
+            logging.error("Resend library not installed. Please run 'pip install resend'.")
             return False
         except Exception as e:
-            logging.error(f"SendPulse email exception: {type(e).__name__} - {str(e)}", exc_info=True)
+            logging.error(f"Resend email exception: {type(e).__name__} - {str(e)}", exc_info=True)
             return False
     else:
-        # Use Flask-Mail for local development
+        # Fallback to Flask-Mail for local development
         try:
             msg = Message(subject, recipients=[to_email])
             msg.html = html_content
