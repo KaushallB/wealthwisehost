@@ -38,10 +38,18 @@ csrf = CSRFProtect(app)
 
 # Production configuration for PostgreSQL
 if os.environ.get('RENDER'):
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL').replace('postgres://', 'postgresql://')
-    app.config['MAIL_SERVER'] = 'smtp.gmail.com'
-    app.config['MAIL_PORT'] = 587
-    app.config['MAIL_USE_TLS'] = True
+    db_url = os.environ.get('DATABASE_URL', '')
+    if db_url.startswith('postgres://'):
+        db_url = db_url.replace('postgres://', 'postgresql://', 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = db_url
+    mail_server = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    mail_port = int(os.environ.get('MAIL_PORT', 465))
+    use_ssl = os.environ.get('MAIL_USE_SSL', 'true').lower() == 'true'
+    use_tls = os.environ.get('MAIL_USE_TLS', 'false').lower() == 'true'
+    app.config['MAIL_SERVER'] = mail_server
+    app.config['MAIL_PORT'] = mail_port
+    app.config['MAIL_USE_SSL'] = use_ssl
+    app.config['MAIL_USE_TLS'] = use_tls
     app.config['MAIL_USERNAME'] = os.environ.get('EMAIL_USER')
     app.config['MAIL_PASSWORD'] = os.environ.get('EMAIL_PASS')
     app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('EMAIL_USER')
@@ -50,6 +58,7 @@ else:
     app.config['MAIL_SERVER'] = 'localhost'
     app.config['MAIL_PORT'] = 1025
     app.config['MAIL_USE_TLS'] = False
+    app.config['MAIL_USE_SSL'] = False
     app.config['MAIL_USERNAME'] = None
     app.config['MAIL_PASSWORD'] = None
     app.config['MAIL_DEFAULT_SENDER'] = 'noreply@wealthwise.com'
