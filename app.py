@@ -30,7 +30,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
 
-logging.basicConfig(level=logging.ERROR, filename='app.log')
+logging.basicConfig(level=logging.INFO, filename='app.log', format='%(asctime)s - %(levelname)s - %(message)s')
 
 app = Flask(__name__)
 
@@ -93,12 +93,12 @@ def send_email(to_email, subject, html_content):
         try:
             from pysendpulse.pysendpulse import PySendPulse
             
-            logging.info(f"Sending SendPulse email to {to_email} with subject: {subject}")
+            logging.info(f"SendPulse config - ID: {sendpulse_id[:10]}..., From: {from_email}, To: {to_email}")
             
-            # Initialize SendPulse client
+            # Initialize SendPulse client with no token storage
             sp = PySendPulse(sendpulse_id, sendpulse_secret, 'memcached')
             
-            # Prepare email data
+            # Prepare email data - SendPulse requires specific format
             email_data = {
                 'html': html_content,
                 'subject': subject,
@@ -106,21 +106,29 @@ def send_email(to_email, subject, html_content):
                 'to': [{'email': to_email}]
             }
             
-            # Send email
+            logging.info(f"Sending email via SendPulse SMTP API...")
+            
+            # Send email using SMTP method
             result = sp.smtp_send_mail(email_data)
             
-            logging.info(f"SendPulse response: {result}")
+            logging.info(f"SendPulse full response: {result}")
             
             # Check if email was sent successfully
-            if result and result.get('result'):
-                logging.info(f"SendPulse email sent successfully to {to_email}")
+            # SendPulse returns {'result': True} on success
+            if result and isinstance(result, dict) and result.get('result') is True:
+                logging.info(f"✓ SendPulse email sent successfully to {to_email}")
                 return True
             else:
-                logging.error(f"SendPulse failed: {result}")
+                error_msg = result.get('message', 'Unknown error') if isinstance(result, dict) else str(result)
+                logging.error(f"✗ SendPulse failed: {error_msg}")
+                logging.error(f"Full error response: {result}")
                 return False
                 
+        except ImportError as e:
+            logging.error(f"SendPulse library not installed: {str(e)}")
+            return False
         except Exception as e:
-            logging.error(f"SendPulse email exception: {type(e).__name__} - {str(e)}")
+            logging.error(f"SendPulse email exception: {type(e).__name__} - {str(e)}", exc_info=True)
             return False
     else:
         # Use Flask-Mail for local development
