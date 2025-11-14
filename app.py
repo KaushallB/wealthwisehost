@@ -83,40 +83,37 @@ mail = Mail(app)
 nepal_tz = pytz.timezone('Asia/Kathmandu')
 
 def send_email(to_email, subject, html_content):
-    """Send email using Brevo API or Flask-Mail fallback"""
-    brevo_key = os.environ.get('BREVO_API_KEY')
-    from_email = os.environ.get('EMAIL_USER', 'wealth.wisee.25@gmail.com')
-    from_name = os.environ.get('FROM_NAME', 'WealthWise')
+    """Send email using Resend API or Flask-Mail fallback"""
+    resend_key = os.environ.get('RESEND_API_KEY')
+    from_email = os.environ.get('EMAIL_USER', 'onboarding@resend.dev')
     
-    if brevo_key and os.environ.get('RENDER'):
-        # Use Brevo (Sendinblue) on production
+    if resend_key and os.environ.get('RENDER'):
+        # Use Resend on production
         try:
-            payload = {
-                "sender": {"name": from_name, "email": from_email},
-                "to": [{"email": to_email}],
-                "subject": subject,
-                "htmlContent": html_content
-            }
-            logging.info(f"Sending Brevo email to {to_email} with subject: {subject}")
+            logging.info(f"Sending Resend email to {to_email} with subject: {subject}")
             response = requests.post(
-                "https://api.brevo.com/v3/smtp/email",
+                "https://api.resend.com/emails",
                 headers={
-                    "accept": "application/json",
-                    "api-key": brevo_key,
-                    "content-type": "application/json"
+                    "Authorization": f"Bearer {resend_key}",
+                    "Content-Type": "application/json"
                 },
-                json=payload,
+                json={
+                    "from": from_email,
+                    "to": [to_email],
+                    "subject": subject,
+                    "html": html_content
+                },
                 timeout=10
             )
-            logging.info(f"Brevo response: status={response.status_code}, body={response.text}")
-            if response.status_code == 201:
-                logging.info(f"Brevo email sent successfully to {to_email}")
+            logging.info(f"Resend response: status={response.status_code}, body={response.text}")
+            if response.status_code == 200:
+                logging.info(f"Resend email sent successfully to {to_email}")
                 return True
             else:
-                logging.error(f"Brevo failed: status={response.status_code}, response={response.text}")
+                logging.error(f"Resend failed: status={response.status_code}, response={response.text}")
                 return False
         except Exception as e:
-            logging.error(f"Brevo email exception: {type(e).__name__} - {str(e)}")
+            logging.error(f"Resend email exception: {type(e).__name__} - {str(e)}")
             return False
     else:
         # Use Flask-Mail for local development
