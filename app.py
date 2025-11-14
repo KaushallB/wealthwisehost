@@ -81,6 +81,10 @@ app.config['MAIL_DEBUG'] = True
 app.config['MAIL_SUPPRESS_SEND'] = False
 app.config['MAIL_FAIL_SILENTLY'] = False
 app.config['WTF_CSRF_ENABLED'] = True
+app.config['SESSION_COOKIE_SECURE'] = True  # Required for HTTPS
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['WTF_CSRF_TIME_LIMIT'] = None  # No time limit for CSRF tokens
 
 enc = Bcrypt(app)
 mail = Mail(app)
