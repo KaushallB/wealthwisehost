@@ -107,28 +107,29 @@ def send_email(to_email, subject, html_content):
             # Initialize SendPulse client - use None for no token storage
             sp = PySendPulse(sendpulse_id, sendpulse_secret, 'memcached')
             
-            # Prepare email data - SendPulse SMTP API format
-            email_body = {
-                'html': html_content,
-                'text': subject,  # Plain text version
-                'subject': subject,
-                'from': {
-                    'name': 'WealthWise',
-                    'email': from_email
-                },
-                'to': [
-                    {
-                        'name': to_email.split('@')[0],  # Use email prefix as name
-                        'email': to_email
-                    }
-                ]
+            # SendPulse API requires a different payload for its core `send_emails` function
+            email_payload = {
+                "email": {
+                    "html": html_content,
+                    "text": subject,
+                    "subject": subject,
+                    "from": {
+                        "name": "WealthWise",
+                        "email": from_email
+                    },
+                    "to": [
+                        {
+                            "name": to_email.split('@')[0],
+                            "email": to_email
+                        }
+                    ]
+                }
             }
             
-            logging.info(f"Sending email via SendPulse SMTP API...")
-            logging.info(f"Email body structure: {list(email_body.keys())}")
+            logging.info(f"Sending email via SendPulse core API (send_emails)...")
             
-            # Send via SMTP API
-            result = sp.smtp_send_mail(email_body)
+            # Use the core send_emails function instead of the smtp one
+            result = sp.send_emails(email_payload)
             
             logging.info(f"SendPulse full response: {result}")
             
@@ -141,17 +142,11 @@ def send_email(to_email, subject, html_content):
                         http_code = result['data'].get('http_code', 'unknown')
                         error_msg = f"SendPulse API error: HTTP {http_code}"
                         
-                        # If 422, sender not verified - try without sender verification
+                        # If 422, sender not verified - this is the final failure point
                         if http_code == 422:
-                            logging.warning(f"Sender not verified, trying alternative method...")
-                            # Try with default SendPulse sender
-                            email_body['from'] = {'name': 'WealthWise', 'email': 'noreply@sendpulse.com'}
-                            result = sp.smtp_send_mail(email_body)
-                            logging.info(f"Alternative send response: {result}")
-                            
-                            if result and isinstance(result, dict) and not result.get('data', {}).get('is_error'):
-                                logging.info(f"✓ Email sent via alternative sender")
-                                return True
+                            logging.error(f"✗ SendPulse failed: Sender email '{from_email}' is not verified in SendPulse.")
+                            logging.error("Please ensure the sender email is added and verified in your SendPulse account settings.")
+                            return False
                         
                         logging.error(f"✗ SendPulse failed: {error_msg}")
                         logging.error(f"Full error response: {result}")
