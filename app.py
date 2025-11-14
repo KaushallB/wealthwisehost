@@ -107,18 +107,27 @@ def send_email(to_email, subject, html_content):
             # Initialize SendPulse client - use None for no token storage
             sp = PySendPulse(sendpulse_id, sendpulse_secret, 'memcached')
             
-            # Prepare email data - using simpler format
+            # Prepare email data - SendPulse SMTP API format
             email_body = {
+                'html': html_content,
+                'text': subject,  # Plain text version
                 'subject': subject,
-                'body': html_content,
-                'from': {'name': 'WealthWise', 'email': from_email},
-                'to': [{'email': to_email}],
-                'html': html_content
+                'from': {
+                    'name': 'WealthWise',
+                    'email': from_email
+                },
+                'to': [
+                    {
+                        'name': to_email.split('@')[0],  # Use email prefix as name
+                        'email': to_email
+                    }
+                ]
             }
             
-            logging.info(f"Sending email via SendPulse simple email API...")
+            logging.info(f"Sending email via SendPulse SMTP API...")
+            logging.info(f"Email body structure: {list(email_body.keys())}")
             
-            # Try smtp_send_mail first, if it fails try simple send
+            # Send via SMTP API
             result = sp.smtp_send_mail(email_body)
             
             logging.info(f"SendPulse full response: {result}")
