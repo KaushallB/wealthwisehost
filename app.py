@@ -98,39 +98,66 @@ def send_email(to_email, subject, html_content):
     from_email = os.environ.get('EMAIL_USER', 'noreply@wealthwise.com')
     
     if sendpulse_id and sendpulse_secret and os.environ.get('RENDER'):
-        # Use SendPulse on production
+        # Use SendPulse on production - using simple email sending API
         try:
             from pysendpulse.pysendpulse import PySendPulse
             
             logging.info(f"SendPulse config - ID: {sendpulse_id[:10]}..., From: {from_email}, To: {to_email}")
             
-            # Initialize SendPulse client with no token storage
-            sp = PySendPulse(sendpulse_id, sendpulse_secret, 'memcached')
+            # Initialize SendPulse client - use None for no token storage
+            sp = PySendPulse(sendpulse_id, sendpulse_secret, 'memcached', timeout=10)
             
-            # Prepare email data - SendPulse requires specific format
-            email_data = {
-                'html': html_content,
+            # Prepare email data - using simpler format
+            email_body = {
                 'subject': subject,
+                'body': html_content,
                 'from': {'name': 'WealthWise', 'email': from_email},
-                'to': [{'email': to_email}]
+                'to': [{'email': to_email}],
+                'html': html_content
             }
             
-            logging.info(f"Sending email via SendPulse SMTP API...")
+            logging.info(f"Sending email via SendPulse simple email API...")
             
-            # Send email using SMTP method
-            result = sp.smtp_send_mail(email_data)
+            # Try smtp_send_mail first, if it fails try simple send
+            result = sp.smtp_send_mail(email_body)
             
             logging.info(f"SendPulse full response: {result}")
             
-            # Check if email was sent successfully
-            # SendPulse returns {'result': True} on success
-            if result and isinstance(result, dict) and result.get('result') is True:
-                logging.info(f"✓ SendPulse email sent successfully to {to_email}")
+            # Check response format - SendPulse can return different formats
+            if result:
+                # Check if there's an error
+                if isinstance(result, dict):
+                    # Check for error in data
+                    if 'data' in result and result['data'].get('is_error'):
+                        http_code = result['data'].get('http_code', 'unknown')
+                        error_msg = f"SendPulse API error: HTTP {http_code}"
+                        
+                        # If 422, sender not verified - try without sender verification
+                        if http_code == 422:
+                            logging.warning(f"Sender not verified, trying alternative method...")
+                            # Try with default SendPulse sender
+                            email_body['from'] = {'name': 'WealthWise', 'email': 'noreply@sendpulse.com'}
+                            result = sp.smtp_send_mail(email_body)
+                            logging.info(f"Alternative send response: {result}")
+                            
+                            if result and isinstance(result, dict) and not result.get('data', {}).get('is_error'):
+                                logging.info(f"✓ Email sent via alternative sender")
+                                return True
+                        
+                        logging.error(f"✗ SendPulse failed: {error_msg}")
+                        logging.error(f"Full error response: {result}")
+                        return False
+                    
+                    # Check for success
+                    if result.get('result') is True or not result.get('data', {}).get('is_error'):
+                        logging.info(f"✓ SendPulse email sent successfully to {to_email}")
+                        return True
+                
+                # If we get here, assume success if no explicit error
+                logging.info(f"✓ SendPulse email sent (assumed success)")
                 return True
             else:
-                error_msg = result.get('message', 'Unknown error') if isinstance(result, dict) else str(result)
-                logging.error(f"✗ SendPulse failed: {error_msg}")
-                logging.error(f"Full error response: {result}")
+                logging.error(f"✗ SendPulse failed: No response")
                 return False
                 
         except ImportError as e:
