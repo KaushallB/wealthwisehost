@@ -24,7 +24,7 @@ import zipfile
 import io
 import logging
 import requests
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
@@ -69,7 +69,10 @@ nepal_tz = pytz.timezone('Asia/Kathmandu')
 
 def get_db_connection():
     if os.environ.get('RENDER'):
-        conn = psycopg2.connect(os.environ.get('DATABASE_URL'))
+        db_url = os.environ.get('DATABASE_URL')
+        if db_url and db_url.startswith('postgres://'):
+            db_url = db_url.replace('postgres://', 'postgresql://', 1)
+        conn = psycopg2.connect(db_url)
     else:
         conn = psycopg2.connect(
             host="localhost",
