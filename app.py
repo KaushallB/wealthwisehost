@@ -82,6 +82,50 @@ mail = Mail(app)
 
 nepal_tz = pytz.timezone('Asia/Kathmandu')
 
+def send_email(to_email, subject, html_content):
+    """Send email using Brevo API or Flask-Mail fallback"""
+    brevo_key = os.environ.get('BREVO_API_KEY')
+    from_email = os.environ.get('EMAIL_USER', 'wealth.wisee.25@gmail.com')
+    from_name = os.environ.get('FROM_NAME', 'WealthWise')
+    
+    if brevo_key and os.environ.get('RENDER'):
+        # Use Brevo (Sendinblue) on production
+        try:
+            response = requests.post(
+                "https://api.brevo.com/v3/smtp/email",
+                headers={
+                    "accept": "application/json",
+                    "api-key": brevo_key,
+                    "content-type": "application/json"
+                },
+                json={
+                    "sender": {"name": from_name, "email": from_email},
+                    "to": [{"email": to_email}],
+                    "subject": subject,
+                    "htmlContent": html_content
+                }
+            )
+            if response.status_code == 201:
+                logging.info(f"Brevo email sent to {to_email}")
+                return True
+            else:
+                logging.error(f"Brevo failed: {response.status_code} - {response.text}")
+                return False
+        except Exception as e:
+            logging.error(f"Brevo email failed: {str(e)}")
+            return False
+    else:
+        # Use Flask-Mail for local development
+        try:
+            msg = Message(subject, recipients=[to_email])
+            msg.html = html_content
+            mail.send(msg)
+            logging.info(f"Flask-Mail email sent to {to_email}")
+            return True
+        except Exception as e:
+            logging.error(f"Flask-Mail email failed: {str(e)}")
+            return False
+
 def get_db_connection():
     if os.environ.get('RENDER'):
         db_url = os.environ.get('DATABASE_URL')
@@ -186,15 +230,13 @@ def login():
                                 'attempts': 0,
                                 'lockout_time': None
                             }
-                            try:
-                                msg = Message("Your Wealthwise OTP", recipients=[email])
-                                msg.html = render_template("otp_email.html", full_name=full_name, otp=otp)
-                                mail.send(msg)
+                            html_content = render_template("otp_email.html", full_name=full_name, otp=otp)
+                            if send_email(email, "Your Wealthwise OTP", html_content):
                                 flash("An OTP has been sent to your email.", 'info')
                                 logging.info(f"OTP sent to {email}")
-                            except Exception as email_error:
-                                logging.error(f"OTP email sending failed: {str(email_error)}")
-                                flash(f'Error sending OTP: {str(email_error)}', 'danger')
+                            else:
+                                logging.error(f"OTP email sending failed to {email}")
+                                flash(f'Error sending OTP. Please try again.', 'danger')
                         cursor.close()
                         conn.close()
                         return redirect(url_for('verify_otp'))
@@ -243,17 +285,15 @@ def resend_otp():
         'lockout_time': None
     })
     session['otp_data'] = otp_data
-    try:
-        email = otp_data['email']
-        full_name = otp_data['full_name']
-        msg = Message("Your Wealthwise OTP", recipients=[email])
-        msg.html = render_template("otp_email.html", full_name=full_name, otp=otp)
-        mail.send(msg)
+    email = otp_data['email']
+    full_name = otp_data['full_name']
+    html_content = render_template("otp_email.html", full_name=full_name, otp=otp)
+    if send_email(email, "Your Wealthwise OTP", html_content):
         flash('A new OTP has been sent to your email.', 'success')
         logging.info(f"Resent OTP to {email}")
-    except Exception as email_error:
-        logging.error(f"Resend OTP email sending failed: {str(email_error)}")
-        flash(f'Error sending OTP: {str(email_error)}', 'danger')
+    else:
+        logging.error(f"Resend OTP email sending failed to {email}")
+        flash(f'Error sending OTP. Please try again.', 'danger')
     return redirect(url_for('verify_otp'))
 
 #VERIFYOTP
@@ -314,15 +354,13 @@ def forgot_password():
                     'phone': user['phone_number'],
                     'expires': (datetime.now(nepal_tz) + timedelta(minutes=3)).timestamp()
                 }
-                try:
-                    msg = Message("Password Reset Request", recipients=[user['email']])
-                    msg.html = render_template("password_reset_email.html", full_name=user['full_name'], reset_url=reset_url)
-                    mail.send(msg)
+                html_content = render_template("password_reset_email.html", full_name=user['full_name'], reset_url=reset_url)
+                if send_email(user['email'], "Password Reset Request", html_content):
                     flash('A password reset link has been sent to your email.', 'success')
                     logging.info(f"Password reset email sent to {user['email']}")
-                except Exception as email_error:
-                    logging.error(f"Password reset email sending failed: {str(email_error)}")
-                    flash(f'Error sending email: {str(email_error)}', 'danger')
+                else:
+                    logging.error(f"Password reset email sending failed to {user['email']}")
+                    flash(f'Error sending email. Please try again.', 'danger')
             else:
                 flash('Email or phone number not found. Please register first.', 'danger')
                 logging.warning(f"Identifier not found: {identifier}")
@@ -427,13 +465,11 @@ def registration():
                     VALUES (%s, %s, %s, %s, %s, %s)
                 ''', (full_name, email, phone_num, address, hash_pw, True))
                 conn.commit()
-                try:
-                    msg = Message("Welcome to WealthWise!", recipients=[email])
-                    msg.html = render_template("welcome_mail.html", full_name=full_name)
-                    mail.send(msg)
+                html_content = render_template("welcome_mail.html", full_name=full_name)
+                if send_email(email, "Welcome to WealthWise!", html_content):
                     logging.info(f"Welcome email sent to {email}")
-                except Exception as email_error:
-                    logging.error(f"Welcome email sending failed: {str(email_error)}")
+                else:
+                    logging.error(f"Welcome email sending failed to {email}")
                     flash('Registration successful, but failed to send welcome email.', 'warning')
                 cursor.close()
                 conn.close()
