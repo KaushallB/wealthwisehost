@@ -91,6 +91,13 @@ def send_email(to_email, subject, html_content):
     if brevo_key and os.environ.get('RENDER'):
         # Use Brevo (Sendinblue) on production
         try:
+            payload = {
+                "sender": {"name": from_name, "email": from_email},
+                "to": [{"email": to_email}],
+                "subject": subject,
+                "htmlContent": html_content
+            }
+            logging.info(f"Sending Brevo email to {to_email} with subject: {subject}")
             response = requests.post(
                 "https://api.brevo.com/v3/smtp/email",
                 headers={
@@ -98,21 +105,18 @@ def send_email(to_email, subject, html_content):
                     "api-key": brevo_key,
                     "content-type": "application/json"
                 },
-                json={
-                    "sender": {"name": from_name, "email": from_email},
-                    "to": [{"email": to_email}],
-                    "subject": subject,
-                    "htmlContent": html_content
-                }
+                json=payload,
+                timeout=10
             )
+            logging.info(f"Brevo response: status={response.status_code}, body={response.text}")
             if response.status_code == 201:
-                logging.info(f"Brevo email sent to {to_email}")
+                logging.info(f"Brevo email sent successfully to {to_email}")
                 return True
             else:
-                logging.error(f"Brevo failed: {response.status_code} - {response.text}")
+                logging.error(f"Brevo failed: status={response.status_code}, response={response.text}")
                 return False
         except Exception as e:
-            logging.error(f"Brevo email failed: {str(e)}")
+            logging.error(f"Brevo email exception: {type(e).__name__} - {str(e)}")
             return False
     else:
         # Use Flask-Mail for local development
