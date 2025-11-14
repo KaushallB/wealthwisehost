@@ -83,37 +83,44 @@ mail = Mail(app)
 nepal_tz = pytz.timezone('Asia/Kathmandu')
 
 def send_email(to_email, subject, html_content):
-    """Send email using Resend API or Flask-Mail fallback"""
-    resend_key = os.environ.get('RESEND_API_KEY')
-    from_email = os.environ.get('EMAIL_USER', 'onboarding@resend.dev')
+    """Send email using SendPulse API or Flask-Mail fallback"""
+    sendpulse_id = os.environ.get('SENDPULSE_API_ID')
+    sendpulse_secret = os.environ.get('SENDPULSE_API_SECRET')
+    from_email = os.environ.get('EMAIL_USER', 'noreply@wealthwise.com')
     
-    if resend_key and os.environ.get('RENDER'):
-        # Use Resend on production
+    if sendpulse_id and sendpulse_secret and os.environ.get('RENDER'):
+        # Use SendPulse on production
         try:
-            logging.info(f"Sending Resend email to {to_email} with subject: {subject}")
-            response = requests.post(
-                "https://api.resend.com/emails",
-                headers={
-                    "Authorization": f"Bearer {resend_key}",
-                    "Content-Type": "application/json"
-                },
-                json={
-                    "from": from_email,
-                    "to": [to_email],
-                    "subject": subject,
-                    "html": html_content
-                },
-                timeout=10
-            )
-            logging.info(f"Resend response: status={response.status_code}, body={response.text}")
-            if response.status_code == 200:
-                logging.info(f"Resend email sent successfully to {to_email}")
+            from pysendpulse.pysendpulse import PySendPulse
+            
+            logging.info(f"Sending SendPulse email to {to_email} with subject: {subject}")
+            
+            # Initialize SendPulse client
+            sp = PySendPulse(sendpulse_id, sendpulse_secret, 'memcached')
+            
+            # Prepare email data
+            email_data = {
+                'html': html_content,
+                'subject': subject,
+                'from': {'name': 'WealthWise', 'email': from_email},
+                'to': [{'email': to_email}]
+            }
+            
+            # Send email
+            result = sp.smtp_send_mail(email_data)
+            
+            logging.info(f"SendPulse response: {result}")
+            
+            # Check if email was sent successfully
+            if result and result.get('result'):
+                logging.info(f"SendPulse email sent successfully to {to_email}")
                 return True
             else:
-                logging.error(f"Resend failed: status={response.status_code}, response={response.text}")
+                logging.error(f"SendPulse failed: {result}")
                 return False
+                
         except Exception as e:
-            logging.error(f"Resend email exception: {type(e).__name__} - {str(e)}")
+            logging.error(f"SendPulse email exception: {type(e).__name__} - {str(e)}")
             return False
     else:
         # Use Flask-Mail for local development
