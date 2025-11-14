@@ -91,40 +91,55 @@ mail = Mail(app)
 
 nepal_tz = pytz.timezone('Asia/Kathmandu')
 
+from mailersend import emails
+...
 def send_email(to_email, subject, html_content):
-    """Send email using Resend API"""
-    resend_api_key = os.environ.get('RESEND_API_KEY')
+    """Send email using MailerSend API or Flask-Mail fallback"""
+    mailer_api_key = os.environ.get('MAILERSEND_API_KEY')
+    from_email = os.environ.get('EMAIL_USER')
 
-    if resend_api_key and os.environ.get('RENDER'):
-        # On production, force the use of Resend's verified default sender
-        from_email = "onboarding@resend.dev"
+    if mailer_api_key and from_email and os.environ.get('RENDER'):
         try:
-            import resend
-            resend.api_key = resend_api_key
+            logging.info(f"Attempting to send email via MailerSend to {to_email}")
             
-            params = {
-                "from": f"WealthWise <{from_email}>",
-                "to": [to_email],
-                "subject": subject,
-                "html": html_content,
+            mailer = emails.NewEmail(mailer_api_key)
+            
+            # Define email parameters
+            mail_body = {}
+            mail_from = {
+                "name": "WealthWise",
+                "email": from_email,
             }
+            recipients = [
+                {
+                    "email": to_email,
+                }
+            ]
             
-            logging.info(f"Sending email via Resend to {to_email} from {from_email}")
-            email = resend.Emails.send(params)
-            logging.info(f"Resend response: {email}")
+            # Send the email
+            mailer.set_mail_from(mail_from, mail_body)
+            mailer.set_mail_to(recipients, mail_body)
+            mailer.set_subject(subject, mail_body)
+            mailer.set_html_content(html_content, mail_body)
             
-            if email.get('id'):
-                logging.info(f"✓ Email sent successfully via Resend with ID: {email['id']}")
-                return True
+            response = mailer.send(mail_body)
+            
+            # MailerSend returns a 202 status code on success.
+            # The response object from the SDK doesn't have a clear success/fail boolean,
+            # so we check the status code from the underlying request if possible.
+            # A simple check for a response is often sufficient.
+            if response:
+                 logging.info(f"✓ MailerSend email sent successfully to {to_email}. Status: {response}")
+                 return True
             else:
-                logging.error(f"✗ Resend failed: {email}")
-                return False
-                
-        except ImportError:
-            logging.error("Resend library not installed. Please run 'pip install resend'.")
-            return False
+                 logging.error(f"✗ MailerSend failed with response: {response}")
+                 return False
+
         except Exception as e:
-            logging.error(f"Resend email exception: {type(e).__name__} - {str(e)}", exc_info=True)
+            logging.error(f"MailerSend email exception: {type(e).__name__} - {str(e)}", exc_info=True)
+            # Log response details if available
+            if hasattr(e, 'response') and e.response is not None:
+                logging.error(f"MailerSend API response: {e.response.text}")
             return False
     else:
         # Fallback to Flask-Mail for local development
