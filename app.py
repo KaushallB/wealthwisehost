@@ -685,7 +685,7 @@ def chatbot(user_id):
                 api_key = os.environ.get('GEMINI_API_KEY')
                 if not api_key:
                     raise ValueError("API key not found in environment variables.")
-                model = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
+                model = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", google_api_key=api_key)
                 template = """
                 You are a financial advisor for WealthWise, a finance management, advising, and recommendation app for students in Nepal. Provide concise, accurate financial advice (under 100 words) in NPR, focusing on budgeting and differentiating needs vs. wants. 
                 Needs are essential expenses (e.g., rent, groceries, utilities); wants are non-essential (e.g., entertainment, dining out). 
