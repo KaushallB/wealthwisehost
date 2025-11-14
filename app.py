@@ -93,10 +93,9 @@ nepal_tz = pytz.timezone('Asia/Kathmandu')
 
 def send_email(to_email, subject, html_content):
     """Send email using Resend API"""
-    resend_api_key = os.environ.get('RESEND_API_KEY')
-    from_email = os.environ.get('EMAIL_USER', 'noreply@wealthwise.com')
-    
     if resend_api_key and os.environ.get('RENDER'):
+        # On production, force the use of Resend's verified default sender
+        from_email = "onboarding@resend.dev"
         try:
             import resend
             resend.api_key = resend_api_key
