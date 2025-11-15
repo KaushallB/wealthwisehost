@@ -176,21 +176,24 @@
                             </a>
                         </li>
                         <li class="nav-item dropdown">
-                            <a href="#" data-bs-toggle="dropdown" class="nav-icon pe-md-0 profile-dropdown" title="Click to manage your settings">
-                                <img src="{{ url_for('static', filename='assets/profile.jpg') }}" class="avatar img-fluid round" alt="Profilepic">
+                            <a href="#" data-bs-toggle="dropdown" aria-expanded="false" class="nav-link dropdown-toggle pe-md-0" title="Click to manage your settings">
+                                <img src="{{ url_for('static', filename='assets/profile.jpg') }}" class="avatar img-fluid rounded-circle" alt="Profilepic" width="36" height="36">
                             </a>
-                            <div class="dropdown-menu dropdown-menu-end">
-                                <h6 class="dropdown-header">Profile Settings</h6>
-                                <label class="dropdown-item d-flex align-items-center">
-                                    <span class="switch-label">2FA <i class="bi bi-shield-lock-fill" style="color: #28a745;"></i></span>
-                                    <div class="switch">
-                                        <input type="checkbox" id="toggle-2fa-switch" data-user-id="{{ user['id'] }}" 
-                                               {% if user['use_otp'] %}checked{% endif %}>
-                                        <span class="slider"></span>
-                                    </div>
-                                </label>
-                                <a href="{{ url_for('logout') }}" class="dropdown-item">Logout</a>
-                            </div>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><h6 class="dropdown-header">Profile Settings</h6></li>
+                                <li>
+                                    <label class="dropdown-item d-flex align-items-center justify-content-between">
+                                        <span class="switch-label">2FA <i class="bi bi-shield-lock-fill" style="color: #28a745;"></i></span>
+                                        <div class="switch">
+                                            <input type="checkbox" id="toggle-2fa-switch" data-user-id="{{ user['id'] }}" 
+                                                   {% if user['use_otp'] %}checked{% endif %}>
+                                            <span class="slider"></span>
+                                        </div>
+                                    </label>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a href="{{ url_for('logout') }}" class="dropdown-item">Logout</a></li>
+                            </ul>
                         </li>
                     </ul>
                 </div>
