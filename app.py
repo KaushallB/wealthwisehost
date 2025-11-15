@@ -628,6 +628,7 @@ def dashboard(user_id):
 
 #CHATBOT
 @app.route('/chatbot/<int:user_id>', methods=['GET', 'POST'])
+@csrf.exempt
 def chatbot(user_id):
     if not is_logged_in():
         flash('Please log in to access the chatbot.', 'danger')
@@ -676,19 +677,26 @@ def chatbot(user_id):
         cursor.close()
         conn.close()
         if request.method == 'POST':
-            user_message = request.form.get('message', '').strip()
-            context = request.form.get('context', '').strip() or ""
+            # Handle JSON request
+            if request.is_json:
+                data = request.get_json()
+                user_message = data.get('message', '').strip()
+                context = data.get('context', '').strip() or ""
+            else:
+                # Fallback to form data
+                user_message = request.form.get('message', '').strip()
+                context = request.form.get('context', '').strip() or ""
+            
             if not user_message:
                 return jsonify({'response': 'Please enter a message.'}), 400
             try:
-                api_key = os.environ.get('GEMINI_API_KEY')
-                if not api_key:
-                    logging.error("GEMINI_API_KEY not found in environment variables.")
-                    return jsonify({'response': 'API key for chatbot is not configured.'}), 500
+                # This block is now set up for Service Account authentication
+                # The google-auth library will automatically find and use the GOOGLE_APPLICATION_CREDENTIALS_JSON env var
+                
+                # No need to manually configure API key
+                # genai.configure(api_key=api_key)
 
-                genai.configure(api_key=api_key)
-
-                # Safety settings - Lowered threshold for debugging
+                # Safety settings
                 safety_settings = [
                     {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
                     {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},

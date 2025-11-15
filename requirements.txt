@@ -18,3 +18,4 @@ requests==2.31.0
 langchain>=0.2.0  
 langchain-google-genai>=0.0.1
 resend>=0.8.0
+google-auth>=2.29.0
