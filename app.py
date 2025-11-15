@@ -1282,11 +1282,15 @@ def download_reports(user_id):
                 zf.writestr(chart_filename, chart_buffer.read())
         memory_file.seek(0)
         session.pop('report_data', None)
+        
+        # Sanitize full_name for filename (replace spaces with underscores, remove special chars)
+        safe_name = ''.join(c if c.isalnum() or c in (' ', '_') else '' for c in full_name).replace(' ', '_')
+        
         return send_file(
             memory_file,
             mimetype='application/zip',
             as_attachment=True,
-            download_name=f'reports_{user_id}.zip'
+            download_name=f'reports_{safe_name}.zip'
         )
     except Exception as e:
         logging.error(f"Download reports error: {str(e)}")
