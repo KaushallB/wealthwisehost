@@ -1184,6 +1184,8 @@ def download_reports(user_id):
             columns=['DATE', 'CATEGORY', 'AMOUNT', 'TRANSACTION_TYPE']
         )
         df['DATE'] = pd.to_datetime(df['DATE'])
+        # Remove timezone info to make it Excel-compatible
+        df['DATE'] = df['DATE'].dt.tz_localize(None)
         df['AMOUNT'] = pd.to_numeric(df['AMOUNT'], errors='coerce')
         df = df.dropna(subset=['AMOUNT'])
         if df.empty:
