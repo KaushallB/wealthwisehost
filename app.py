@@ -484,7 +484,7 @@ def registration():
                 cursor.close()
                 conn.close()
                 flash('You Have Successfully Registered!', 'success')
-                flash('Tip: You can enable Two-Factor Authentication (2FA) from your dashboard settings for extra security.', 'info')
+                flash('Enable Two-Factor Authentication (2FA) from your profile settings (click your profile picture) for extra security!', 'info')
                 return redirect(url_for('login'))
         except psycopg2.IntegrityError as e:
             conn.rollback()
@@ -1419,8 +1419,10 @@ def toggle_otp(user_id):
         conn.commit()
         
         session.modified = True
-        status_text = 'enabled' if new_otp_status else 'disabled'
-        flash(f'2FA has been {status_text} successfully!', 'success')
+        if new_otp_status:
+            flash('✅ Two-Factor Authentication (2FA) has been enabled! You will receive an OTP via email on your next login.', 'success')
+        else:
+            flash('⚠️ Two-Factor Authentication (2FA) has been disabled. You can re-enable it anytime from your profile settings.', 'warning')
         return redirect(url_for('dashboard', user_id=user_id))
     
     except Exception as e:
