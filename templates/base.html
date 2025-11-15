@@ -264,12 +264,15 @@
                         },
                         body: JSON.stringify({ use_otp: isEnabled })
                     })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Reload page to show flash message
+                            window.location.reload();
+                        } else {
+                            alert(data.message || 'An error occurred while toggling 2FA.');
+                            this.checked = !isEnabled; // Revert switch
                         }
-                        // Redirect to dashboard to show flash message
-                        window.location.href = `/dashboard/${userId}`;
                     })
                     .catch(error => {
                         console.error('Error:', error);

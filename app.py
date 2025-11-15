@@ -1401,8 +1401,7 @@ def view_reports(user_id):
 @csrf.exempt
 def toggle_otp(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
-        flash('Unauthorized access.', 'danger')
-        return redirect(url_for('dashboard', user_id=user_id))
+        return jsonify({'success': False, 'message': 'Unauthorized access.'}), 401
     
     try:
         conn = get_db_connection()
@@ -1410,35 +1409,34 @@ def toggle_otp(user_id):
         cursor.execute('SELECT use_otp FROM users WHERE id = %s', (user_id,))
         user = cursor.fetchone()
         if not user:
-            flash('User not found.', 'danger')
             cursor.close()
             conn.close()
-            return redirect(url_for('dashboard', user_id=user_id))
+            return jsonify({'success': False, 'message': 'User not found.'}), 404
         
         data = request.get_json()
         new_otp_status = data.get('use_otp', not user['use_otp'])
         cursor.execute('UPDATE users SET use_otp = %s WHERE id = %s', (new_otp_status, user_id))
         conn.commit()
+        cursor.close()
+        conn.close()
         
         session.modified = True
         if new_otp_status:
-            flash('✅ Two-Factor Authentication (2FA) has been enabled! You will receive an OTP via email on your next login.', 'success')
+            message = '2FA has been enabled! You will receive an OTP via email on your next login.'
+            category = 'success'
         else:
-            flash('⚠️ Two-Factor Authentication (2FA) has been disabled. You can re-enable it anytime from your profile settings.', 'warning')
-        return redirect(url_for('dashboard', user_id=user_id))
+            message = '2FA has been disabled. You can re-enable it anytime from your profile settings.'
+            category = 'warning'
+        
+        flash(message, category)
+        return jsonify({'success': True, 'message': message, 'category': category})
     
     except Exception as e:
         logging.error(f"Toggle OTP error: {str(e)}")
-        flash(f'Error: {str(e)}', 'danger')
         if 'conn' in locals():
             conn.rollback()
             conn.close()
-        return redirect(url_for('dashboard', user_id=user_id))
-    
-    finally:
-        if 'conn' in locals():
-            cursor.close()
-            conn.close()
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'}), 500
 
 if __name__ == '__main__':
     app.run(debug=False, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
