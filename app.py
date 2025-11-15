@@ -1396,6 +1396,7 @@ def view_reports(user_id):
 
 #TOGGLEOTP
 @app.route('/toggle_otp/<int:user_id>', methods=['POST'])
+@csrf.exempt
 def toggle_otp(user_id):
     if not is_logged_in() or session['user_id'] != user_id:
         flash('Unauthorized access.', 'danger')
