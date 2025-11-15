@@ -690,24 +690,13 @@ def chatbot(user_id):
             if not user_message:
                 return jsonify({'response': 'Please enter a message.'}), 400
             try:
-                # This block is now set up for Service Account authentication
-                # The google-auth library will automatically find and use the GOOGLE_APPLICATION_CREDENTIALS_JSON env var
-                
-                # No need to manually configure API key
-                # genai.configure(api_key=api_key)
+                api_key = os.environ.get('GEMINI_API_KEY')
+                if not api_key:
+                    logging.error("GEMINI_API_KEY not found in environment variables.")
+                    return jsonify({'response': 'Chatbot is not configured. Please contact support.'}), 500
 
-                # Safety settings
-                safety_settings = [
-                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-                ]
-
-                model = genai.GenerativeModel(
-                    model_name="gemini-1.5-flash",
-                    safety_settings=safety_settings
-                )
+                # Use the Client class from google.genai
+                client = genai.Client(api_key=api_key)
                 
                 prompt = f"""
 You are a financial advisor for WealthWise, a finance management, advising, and recommendation app for students in Nepal. Provide concise, accurate financial advice (under 100 words) in NPR, focusing on budgeting and differentiating needs vs. wants. 
@@ -724,7 +713,19 @@ Question: {user_message}
 
 Answer:"""
                 
-                response = model.generate_content(prompt)
+                # Use the client to generate content
+                response = client.models.generate_content(
+                    model='gemini-1.5-flash',
+                    contents=prompt,
+                    config={
+                        'safety_settings': [
+                            {'category': 'HARM_CATEGORY_HARASSMENT', 'threshold': 'BLOCK_NONE'},
+                            {'category': 'HARM_CATEGORY_HATE_SPEECH', 'threshold': 'BLOCK_NONE'},
+                            {'category': 'HARM_CATEGORY_SEXUALLY_EXPLICIT', 'threshold': 'BLOCK_NONE'},
+                            {'category': 'HARM_CATEGORY_DANGEROUS_CONTENT', 'threshold': 'BLOCK_NONE'},
+                        ]
+                    }
+                )
                 
                 ai_response = response.text
                 new_context = f"{context}\nUser: {user_message}\nAI: {ai_response}".strip()
