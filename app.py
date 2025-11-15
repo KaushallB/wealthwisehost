@@ -25,8 +25,6 @@ import zipfile
 import io
 import logging
 import requests
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
 
@@ -686,30 +684,32 @@ def chatbot(user_id):
                 api_key = os.environ.get('GEMINI_API_KEY')
                 if not api_key:
                     raise ValueError("API key not found in environment variables.")
-                model = ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=api_key)
-                template = """
-                You are a financial advisor for WealthWise, a finance management, advising, and recommendation app for students in Nepal. Provide concise, accurate financial advice (under 100 words) in NPR, focusing on budgeting and differentiating needs vs. wants. 
-                Needs are essential expenses (e.g., rent, groceries, utilities); wants are non-essential (e.g., entertainment, dining out). 
-                The average income of Nepalese students is from around Rs 5000.00 to Rs 25000.00.
-                Use the user's financial data. Stay professional, avoid non-financial topics, and do not ask questions unless prompted. 
-                If the query is unclear, suggest asking about budgeting or expenses.
+                
+                # Use native Google GenAI library instead of LangChain
+                from google import genai
+                client = genai.Client(api_key=api_key)
+                
+                prompt = f"""
+You are a financial advisor for WealthWise, a finance management, advising, and recommendation app for students in Nepal. Provide concise, accurate financial advice (under 100 words) in NPR, focusing on budgeting and differentiating needs vs. wants. 
+Needs are essential expenses (e.g., rent, groceries, utilities); wants are non-essential (e.g., entertainment, dining out). 
+The average income of Nepalese students is from around Rs 5000.00 to Rs 25000.00.
+Use the user's financial data. Stay professional, avoid non-financial topics, and do not ask questions unless prompted. 
+If the query is unclear, suggest asking about budgeting or expenses.
 
-                User's financial data: {financial_data}
+User's financial data: {financial_data}
 
-                Conversation history: {context}
+Conversation history: {context}
 
-                Question: {question}
+Question: {user_message}
 
-                Answer:
-                """
-                prompt = ChatPromptTemplate.from_template(template)
-                chain = prompt | model
-                responseofai = chain.invoke({
-                    "financial_data": financial_data,
-                    "context": context,
-                    "question": user_message
-                })
-                ai_response = responseofai.content if hasattr(responseofai, 'content') else str(responseofai)
+Answer:"""
+                
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=prompt
+                )
+                
+                ai_response = response.text
                 new_context = f"{context}\nUser: {user_message}\nAI: {ai_response}".strip()
                 return jsonify({'response': ai_response, 'context': new_context})
             except Exception as ai_error:
