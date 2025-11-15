@@ -683,11 +683,23 @@ def chatbot(user_id):
             try:
                 api_key = os.environ.get('GEMINI_API_KEY')
                 if not api_key:
-                    raise ValueError("API key not found in environment variables.")
-                
-                # Use native Google GenAI library instead of LangChain
-                from google import genai
-                client = genai.Client(api_key=api_key)
+                    logging.error("GEMINI_API_KEY not found in environment variables.")
+                    return jsonify({'response': 'API key for chatbot is not configured.'}), 500
+
+                genai.configure(api_key=api_key)
+
+                # Safety settings - Lowered threshold for debugging
+                safety_settings = [
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                ]
+
+                model = genai.GenerativeModel(
+                    model_name="gemini-1.5-flash",
+                    safety_settings=safety_settings
+                )
                 
                 prompt = f"""
 You are a financial advisor for WealthWise, a finance management, advising, and recommendation app for students in Nepal. Provide concise, accurate financial advice (under 100 words) in NPR, focusing on budgeting and differentiating needs vs. wants. 
@@ -704,17 +716,18 @@ Question: {user_message}
 
 Answer:"""
                 
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash",
-                    contents=prompt
-                )
+                response = model.generate_content(prompt)
                 
                 ai_response = response.text
                 new_context = f"{context}\nUser: {user_message}\nAI: {ai_response}".strip()
                 return jsonify({'response': ai_response, 'context': new_context})
+
             except Exception as ai_error:
-                logging.error(f"Gemini API error: {str(ai_error)} - User: {user_id}")
-                return jsonify({'response': f'API Error: {str(ai_error)}. Please try again later or contact support.'}), 500
+                # Log the full error for better debugging
+                logging.error(f"Gemini API error for user {user_id}: {str(ai_error)}", exc_info=True)
+                # Provide a more user-friendly error message
+                return jsonify({'response': 'Error: Unable to get a response from the AI assistant at the moment. Please try again later.'}), 500
+
         prefilled_question = request.args.get('question', '')
         return render_template('chatbot.html', user=user, full_name=full_name, prefilled_question=prefilled_question)
     except Exception as e:
