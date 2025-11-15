@@ -103,6 +103,7 @@
 
                                     <form method="POST" action="{{ url_for('registration') }}">
                                         {{ form.hidden_tag() }}
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <div data-mdb-input-init class="form-outline mb-4 position-relative">
                                             {{ form.full_name.label(class="form-label text-white") }}
                                             <div class="input-group mb-4">

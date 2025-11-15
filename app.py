@@ -946,8 +946,7 @@ def add_expense(user_id):
                             overage = current_spent - limit
                             flash(f'Budget Alert: You have exceeded your {category_name} budget by Rs {float(overage):.2f} this month. Warning Email has been sent', 'warning')
                             try:
-                                msg = Message("Budget Warning - WealthWise", recipients=[user['email']])
-                                msg.html = render_template("warning.html", 
+                                html_content = render_template("warning.html", 
                                                          full_name=user['full_name'],
                                                          category=category_name,
                                                          status="exceeded",
@@ -955,7 +954,7 @@ def add_expense(user_id):
                                                          limit=float(limit),
                                                          percent=percentage_used,
                                                          user_id=user_id)
-                                mail.send(msg)
+                                send_email(user['email'], "Budget Warning - WealthWise", html_content)
                                 logging.info(f"Budget warning email sent to {user['email']}")
                             except Exception as email_error:
                                 logging.error(f"Budget warning email sending failed: {str(email_error)}")
@@ -963,8 +962,7 @@ def add_expense(user_id):
                             remaining = limit - current_spent
                             flash(f'Budget Notice: You have Rs {float(remaining):.2f} remaining in your {category_name} budget this month. Warning Email has been sent', 'info')
                             try:
-                                msg = Message("Budget Alert - WealthWise", recipients=[user['email']])
-                                msg.html = render_template("warning.html", 
+                                html_content = render_template("warning.html", 
                                                          full_name=user['full_name'],
                                                          category=category_name,
                                                          status="is approaching",
@@ -972,7 +970,7 @@ def add_expense(user_id):
                                                          limit=float(limit),
                                                          percent=percentage_used,
                                                          user_id=user_id)
-                                mail.send(msg)
+                                send_email(user['email'], "Budget Alert - WealthWise", html_content)
                                 logging.info(f"Budget alert email sent to {user['email']}")
                             except Exception as email_error:
                                 logging.error(f"Budget alert email sending failed: {str(email_error)}")

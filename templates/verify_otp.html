@@ -98,7 +98,8 @@
                                         {% endif %}
                                     {% endwith %}
                                     <form method="POST" action="{{ url_for('verify_otp') }}">
-                                        {{ form.hidden_tag() }} 
+                                        {{ form.hidden_tag() }}
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                         <div class="logo-container">
                                             <img class="w-25 img-fluid" src="{{ url_for('static', filename='assets/logowhite.png') }}" alt="logo"/>
                                         </div>
