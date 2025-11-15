@@ -484,7 +484,7 @@ def registration():
                 cursor.close()
                 conn.close()
                 flash('You Have Successfully Registered!', 'success')
-                flash('Enable Two-Factor Authentication (2FA) from your profile settings (click your profile picture) for extra security!', 'info')
+                flash('Enable Two-Factor Authentication (2FA) from your profile settings (click on profile) for extra security!', 'info')
                 return redirect(url_for('login'))
         except psycopg2.IntegrityError as e:
             conn.rollback()
